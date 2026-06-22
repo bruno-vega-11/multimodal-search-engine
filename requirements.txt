@@ -1,0 +1,5 @@
+kagglehub
+psycopg2-binary
+pandas
+Pillow
+mutagenpip 
