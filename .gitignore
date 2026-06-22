@@ -1,2 +1,4 @@
 pyvenv.cfg
-__pycache__\
+**/__pycache__/
+*.pyc
+texto/data/
