@@ -1,1 +1,9 @@
 pyvenv.cfg
+**/__pycache__/
+*.pyc
+texto/data/index/*
+texto/data/processed/*
+texto/data/raw/*
+!texto/data/index/.gitkeep
+!texto/data/processed/.gitkeep
+!texto/data/raw/.gitkeep
