@@ -1,3 +1,8 @@
+kagglehub
+psycopg2-binary
+pandas
+Pillow
+mutagenpip 
 pandas
 nltk
 psycopg2-binary
