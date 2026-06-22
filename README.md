@@ -1,4 +1,4 @@
-multimodal-search-engine
+# multimodal-search-engine
 
 Sistema unificado de recuperación y búsqueda que soporta modalidades de texto - imagen - audio
 
@@ -6,179 +6,116 @@ Este repositorio contiene los scripts necesarios para levantar una base de datos
 
 El sistema trabaja con tres tipos de datos:
 
-- Imágenes de productos de moda .jpg
-- Audios musicales en formato .mp3
-- Letras de canciones y metadata musical en formato .csv
+- Imágenes de productos de moda `.jpg`
+- Audios musicales en formato `.mp3`
+- Letras de canciones y metadata musical en formato `.csv`
 
-1. Levantar PostgreSQL con Docker Compose
+---
+
+## Flujo para levantar el proyecto
+
+### 1. Levantar PostgreSQL con Docker Compose
 
 Primero se debe levantar el contenedor de PostgreSQL usando Docker Compose.
 Desde la carpeta raíz del proyecto, ejecutar:
+
+```bash
 docker compose up -d
+```
+
 Esto levantará un contenedor PostgreSQL con soporte para pgvector.
 
-2. Credenciales de la base de datos
+---
+
+### 2. Credenciales de la base de datos
 
 Los scripts de Python se conectan a PostgreSQL con las siguientes credenciales:
 
-- Base de datos: sistema_multimodal
-- Usuario: postgres
-- Contraseña: 123456
-- Host: localhost
-- Puerto: 5433
+- Base de datos: `sistema_multimodal`
+- Usuario: `postgres`
+- Contraseña: `123456`
+- Host: `localhost`
+- Puerto: `5433`
 
 La conexión usada en los scripts es:
 
+```python
 psycopg2.connect(
-dbname="sistema_multimodal",
-user="postgres",
-password="123456",
-host="localhost",
-port="5433"
+    dbname="sistema_multimodal",
+    user="postgres",
+    password="123456",
+    host="localhost",
+    port="5433"
 )
+```
 
-3. Crear las tablas de la base de datos
+---
 
-Luego de levantar el contenedor, se deben crear las tablas ejecutando el archivo init.sql.
-Ejecutar manualmente el contenido de init.sql desde pgAdmin. Esto incluye la activación de la librería pgvector
+### 3. Crear las tablas de la base de datos
 
-4. Instalar dependencias de Python
+Luego de levantar el contenedor, se deben crear las tablas ejecutando el archivo `init.sql`.
+Ejecutar manualmente el contenido de `init.sql` desde pgAdmin. Esto incluye la activación de la librería pgvector.
+
+---
+
+### 4. Instalar dependencias de Python
 
 Antes de ejecutar cualquier script, instalar las dependencias del proyecto:
-pip install -r requirements.txt
 
-El archivo requirements.txt contiene:
+```bash
+pip install -r requirements.txt
+```
+
+El archivo `requirements.txt` contiene:
+
+```
 kagglehub
 psycopg2-binary
 pandas
 Pillow
 mutagen
+```
 
 Estas librerías se usan para:
-Descargar datasets desde Kaggle.
-Conectarse a PostgreSQL.
-Leer archivos CSV.
-Procesar imágenes.
-Leer metadata de audios .mp3.
 
-5. Descargar Datasets
+- Descargar datasets desde Kaggle.
+- Conectarse a PostgreSQL.
+- Leer archivos CSV.
+- Procesar imágenes.
+- Leer metadata de audios `.mp3`.
 
-Sistema de imágenes:
-El encargado del sistema de imágenes debe usar los siguientes archivos:
-download_images_dataset.py
-insert_image_dataset.py
+---
+
+### 5. Descargar Datasets
+
+#### Sistema de texto
+
+El encargado del sistema de texto debe usar los siguientes archivos:
+
+- `download_text_dataset.py`
+- `insert_text_dataset.py`
 
 Ejecutar:
-python download_images_dataset.py
+
+```bash
+python download_texto_dataset.py
+```
 
 Este script descarga el dataset de Kaggle:
-paramaggarwal/fashion-product-images-dataset
 
-La descarga se realiza en la ruta (modificar a una ruta local):
-E:\Dataset-Visual-E-commerce
+```
+notshrirang/spotify-million-song-dataset
+```
 
-Insertar imágenes en PostgreSQL:
-Luego de descargar las imágenes, ejecutar:
-python insert_image_dataset.py
+En una ruta relativa.
 
-Este script lee las imágenes .jpg desde la ruta modificada:
-E:\Dataset-Visual-E-commerce
+Luego de descargar el dataset correspondiente a texto, ejecutar:
 
-e inserta la información en la tabla:
-images_dataset
-
-La tabla guarda:
-
-- Nombre del archivo.
-- Imagen real en formato binario BYTEA.
-- Tipo de contenido.
-- Tamaño del archivo.
-- Ancho.
-- Alto.
-- Fecha de creación.
-
-Sistema de audio:
-
-El encargado del sistema de audio debe usar el archivo:
-insert_audio_dataset.py
-
-Antes de ejecutar el script, se debe tener descargado el dataset de audios FMA Small.
-La carpeta esperada es (modificar):
-E:\Dataset-Musical-Inteligente\fma_small
-
-Pasos para descargar:
-
-1. Ingresar a repositorio: https://github.com/mdeff/fma
-2. Dentro del readme, hacer click en "fma_small.zip"
-3. Una vez terminada la descarga, descomprimirlo en la carpeta "E:\Dataset-Musical-Inteligente\fma_small" (modificable)
-
-Dentro de esa carpeta deben existir subcarpetas como:
-000,
-001,
-002,
-003 ...
-
-Dentro de esas subcarpetas deben estar los archivos .mp3, por ejemplo:
-000002.mp3,
-000005.mp3,
-000010.mp3,
-
-Insertar audios en PostgreSQL:
-
-Ejecutar:
-python insert_audio_dataset.py
-Este script recorre todas las subcarpetas dentro de:
-E:\Dataset-Musical-Inteligente\fma_small (modificar)
-
-busca archivos .mp3 e inserta cada audio en la tabla: audio_dataset
-
-La tabla guarda:
-
-- Nombre del archivo.
-- Número de pista.
-- Título.
-- Colaboradores o artistas.
-- Álbum.
-- Audio real en formato binario BYTEA.
-- Tipo de contenido.
-- Tamaño del archivo.
-- Duración en segundos.
-- Fecha de creación.
-
-Sistema de texto:
-
-El encargado del sistema de texto debe usar el archivo:
-insert_text_dataset.py
-Este módulo usa un CSV con canciones, letras y metadata musical.
-El archivo CSV debe estar en la misma carpeta donde se ejecuta el script.
-El nombre del archivo debe coincidir con la variable definida en el script:
-
-CSV_FILE = "spotify_songs.csv"
-
-El CSV debe tener las siguientes columnas:
-
-- track_id
-- track_name
-- track_artist
-- lyrics
-- track_popularity
-- track_album_id
-- track_album_name
-- track_album_release_date
-- playlist_name
-- playlist_id
-- playlist_genre
-- playlist_subgenre
-- danceability
-- energy
-- key
-- loudness
-
-Ejecutar:
+```bash
 python insert_text_dataset.py
+```
 
-Este script lee el CSV e inserta los registros en la tabla:
-text_dataset
+Este script lee la información del dataset e inserta en la tabla `text_dataset`.
 
 La tabla guarda:
 
@@ -194,4 +131,103 @@ La tabla guarda:
 - Subgénero.
 - Features musicales.
 - Idioma de la letra.
+- Fecha de creación.
+
+---
+
+#### Sistema de imágenes
+
+El encargado del sistema de imágenes debe usar los siguientes archivos:
+
+- `download_images_dataset.py`
+- `insert_image_dataset.py`
+
+Ejecutar:
+
+```bash
+python download_images_dataset.py
+```
+
+Este script descarga el dataset de Kaggle:
+
+```
+paramaggarwal/fashion-product-images-dataset
+```
+
+En una ruta relativa.
+
+Luego de descargar las imágenes, ejecutar:
+
+```bash
+python insert_image_dataset.py
+```
+
+Este script lee las imágenes `.jpg` desde la ruta:
+
+```
+E:\Dataset-Visual-E-commerce
+```
+
+e inserta la información en la tabla `images_dataset`.
+
+La tabla guarda:
+
+- Nombre del archivo.
+- Imagen real en formato binario BYTEA.
+- Tipo de contenido.
+- Tamaño del archivo.
+- Ancho.
+- Alto.
+- Fecha de creación.
+
+---
+
+#### Sistema de audio
+
+El encargado del sistema de audio debe usar el archivo `insert_audio_dataset.py`.
+
+Antes de ejecutar el script, se debe tener descargado el dataset de audios FMA Small.
+La carpeta esperada es (modificar):
+
+```
+E:\Dataset-Musical-Inteligente\fma_small
+```
+
+Pasos para descargar:
+
+1. Ingresar al repositorio: https://github.com/mdeff/fma
+2. Dentro del readme, hacer click en `fma_small.zip`.
+3. Una vez terminada la descarga, descomprimirlo en la carpeta `E:\Dataset-Musical-Inteligente\fma_small` (modificable).
+
+Dentro de esa carpeta deben existir subcarpetas como:
+
+```
+000, 001, 002, 003 ...
+```
+
+Dentro de esas subcarpetas deben estar los archivos `.mp3`, por ejemplo:
+
+```
+000002.mp3, 000005.mp3, 000010.mp3 ...
+```
+
+Luego, ejecutar:
+
+```bash
+python insert_audio_dataset.py
+```
+
+Este script recorre todas las subcarpetas dentro de `E:\Dataset-Musical-Inteligente\fma_small` (modificar), busca archivos `.mp3` e inserta cada audio en la tabla `audio_dataset`.
+
+La tabla guarda:
+
+- Nombre del archivo.
+- Número de pista.
+- Título.
+- Colaboradores o artistas.
+- Álbum.
+- Audio real en formato binario BYTEA.
+- Tipo de contenido.
+- Tamaño del archivo.
+- Duración en segundos.
 - Fecha de creación.
