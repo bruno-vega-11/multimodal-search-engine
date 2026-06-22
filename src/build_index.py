@@ -1,36 +1,15 @@
 import json
 
-from indexing.token_stream import (
-    token_stream
-)
+from indexing.token_stream import (token_stream)
+from indexing.spimi import (SPIMI)
 
-from indexing.spimi import (
-    SPIMI
-)
-
-with open(
-    "data/processed/codebook.json",
-    "r",
-    encoding="utf-8"
-) as f:
+with open("data/processed/codebook.json", "r", encoding="utf-8") as f:
     codebook = set(json.load(f).keys())
 
 print(f"Codebook cargado: {len(codebook)} terminos")
 
-generator = token_stream(
-    "data/processed/processed_chunks.jsonl",
-    codebook=codebook
-)
+generator = token_stream("data/processed/processed_chunks.jsonl", codebook=codebook)
 
-spimi = SPIMI(
+spimi = SPIMI(output_dir="data/index", max_memory_mb=30) # se pudee ajustar la memoria
 
-    output_dir=
-    "data/index",
-
-    # AJUSTA ESTO
-    max_memory_mb=30
-)
-
-spimi.invert(
-    generator
-)
+spimi.invert(generator)

@@ -1,2 +1,4 @@
 pandas
 nltk
+psycopg2-binary
+python-dotenv
