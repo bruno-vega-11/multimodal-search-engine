@@ -1,5 +1,5 @@
 # src/build_norms.py
-
+import os
 import json
 import math
 from collections import defaultdict
@@ -54,5 +54,9 @@ def build_doc_norms(index_file, idf_file, output_file):
 
 
 if __name__ == "__main__":
-
-    build_doc_norms(index_file="data/index/final_index.idx", idf_file="data/processed/idf.json", output_file="data/index/doc_norms.json")
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # -> texto
+    build_doc_norms(
+        index_file=os.path.join(BASE_DIR,"data","index","final_index.idx"), 
+        idf_file=os.path.join(BASE_DIR,"data","processed","idf.json"), 
+        output_file=os.path.join(BASE_DIR,"data","index","doc_norms.json")
+    )

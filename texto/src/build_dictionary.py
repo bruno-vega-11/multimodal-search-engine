@@ -1,6 +1,6 @@
 # src/build_dictionary.py
 
-import json
+import os,json
 
 def build_dictionary(index_file, dictionary_file):
     dictionary = {}
@@ -25,4 +25,8 @@ def build_dictionary(index_file, dictionary_file):
     print(f"Dictionary saved: " f"{dictionary_file}")
 
 if __name__ == "__main__":
-    build_dictionary(index_file="data/index/final_index.idx",dictionary_file="data/index/dictionary.json")
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # -> texto/
+    build_dictionary(
+        index_file=os.path.join(BASE_DIR,"data","index","final_index.idx"),
+        dictionary_file=os.path.join(BASE_DIR,"data","index","dictionary.json")
+    )

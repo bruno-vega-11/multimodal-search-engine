@@ -20,13 +20,18 @@
 #
 # Uso:
 #   python src/load_to_postgres.py
-
+import os
 import json
 from db import get_connection
 
 BATCH_SIZE = 5000
 
-def load_schema(conn, schema_path="src/sql/schema.sql"):
+def load_schema(conn, schema_path=None):
+
+    if schema_path is None:
+        BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # -> texto
+        schema_path = os.path.join(BASE_DIR,"src","sql","schema.sql")
+
     print("Aplicando schema...")
 
     with open(schema_path, encoding="utf-8") as f:
@@ -153,16 +158,20 @@ def load_term_index(conn, idf_file, index_file):
 
 
 def main():
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # -> texto
+    DATA = os.path.join(BASE_DIR,"data")
+
     conn = get_connection()
     try:
         load_schema(conn)
         # Orden importa por las foreign keys:
         # codebook -> term_index
         # metadata -> doc_norms
-        load_codebook(conn, "data/processed/codebook.json")
-        load_metadata(conn, "data/processed/metadata.json")
-        load_doc_norms(conn, "data/index/doc_norms.json")
-        load_term_index(conn, "data/processed/idf.json", "data/index/final_index.idx")
+        load_codebook(conn, os.path.join(DATA,"processed","codebook.json"))
+        load_metadata(conn, os.path.join(DATA,"processed","metadata.json"))
+        load_doc_norms(conn, os.path.join(DATA,"index","doc_norms.json"))
+        load_term_index(conn, os.path.join(DATA, "processed", "idf.json"),
+                              os.path.join(DATA, "index",     "final_index.idx"))
         print("\nCarga completa.")
 
     finally:
