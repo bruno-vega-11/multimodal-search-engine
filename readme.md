@@ -63,7 +63,45 @@ Leer metadata de audios .mp3.
 
 5. Descargar Datasets
 
+Sistema de texto:
+
+El encargado del sistema de texto debe usar los siguientes archivos:
+download_text_dataset.py
+insert_text_dataset.py
+
+Ejecutar:
+python download_texto_dataset.py
+
+Este script descarga el dataset de Kaggle:
+notshrirang/spotify-million-song-dataset
+En una ruta relativa
+
+Luego de descargar el dataset correspondiente a texto, Ejecutar:
+python insert_text_dataset.py
+
+Este script lee la informacion del dataset e inserta en la tabla:
+text_dataset
+
+La tabla guarda:
+
+- ID de canción.
+- Nombre de canción.
+- Artista.
+- Letra completa.
+- Popularidad.
+- Álbum.
+- Fecha de lanzamiento.
+- Playlist.
+- Género.
+- Subgénero.
+- Features musicales.
+- Idioma de la letra.
+- Fecha de creación.
+
+---
+
 Sistema de imágenes:
+
 El encargado del sistema de imágenes debe usar los siguientes archivos:
 download_images_dataset.py
 insert_image_dataset.py
@@ -73,9 +111,7 @@ python download_images_dataset.py
 
 Este script descarga el dataset de Kaggle:
 paramaggarwal/fashion-product-images-dataset
-
-La descarga se realiza en la ruta (modificar a una ruta local):
-E:\Dataset-Visual-E-commerce
+En una ruta relativa
 
 Insertar imágenes en PostgreSQL:
 Luego de descargar las imágenes, ejecutar:
@@ -96,6 +132,8 @@ La tabla guarda:
 - Ancho.
 - Alto.
 - Fecha de creación.
+
+---
 
 Sistema de audio:
 
@@ -145,53 +183,4 @@ La tabla guarda:
 - Duración en segundos.
 - Fecha de creación.
 
-Sistema de texto:
-
-El encargado del sistema de texto debe usar el archivo:
-insert_text_dataset.py
-Este módulo usa un CSV con canciones, letras y metadata musical.
-El archivo CSV debe estar en la misma carpeta donde se ejecuta el script.
-El nombre del archivo debe coincidir con la variable definida en el script:
-
-CSV_FILE = "spotify_songs.csv"
-
-El CSV debe tener las siguientes columnas:
-
-- track_id
-- track_name
-- track_artist
-- lyrics
-- track_popularity
-- track_album_id
-- track_album_name
-- track_album_release_date
-- playlist_name
-- playlist_id
-- playlist_genre
-- playlist_subgenre
-- danceability
-- energy
-- key
-- loudness
-
-Ejecutar:
-python insert_text_dataset.py
-
-Este script lee el CSV e inserta los registros en la tabla:
-text_dataset
-
-La tabla guarda:
-
-- ID de canción.
-- Nombre de canción.
-- Artista.
-- Letra completa.
-- Popularidad.
-- Álbum.
-- Fecha de lanzamiento.
-- Playlist.
-- Género.
-- Subgénero.
-- Features musicales.
-- Idioma de la letra.
-- Fecha de creación.
+---

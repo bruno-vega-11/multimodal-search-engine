@@ -1,8 +1,13 @@
+import os
 import kagglehub
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+OUTPUT_DIR = os.path.join(BASE_DIR,"image-dataset")
 
 path = kagglehub.dataset_download(
     "paramaggarwal/fashion-product-images-dataset",
-    output_dir=r"E:\Dataset-Visual-E-commerce"
+    output_dir=OUTPUT_DIR
 )
 
 print("Dataset descargado en:", path)

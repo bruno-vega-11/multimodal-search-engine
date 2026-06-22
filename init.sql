@@ -26,9 +26,6 @@ CREATE TABLE audio_dataset (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-DROP TABLE text_dataset
-
-
 CREATE TABLE text_dataset (
     text_id SERIAL PRIMARY KEY,
     track_id VARCHAR(100) UNIQUE,

@@ -1,4 +1,13 @@
+import os
 import kagglehub
 
-path = kagglehub.dataset_download("imuhammad/audio-features-and-lyrics-of-spotify-songs",output_dir=r"E:\Dataset-Lyrics")
-print("Path to dataset files:", path)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+OUTPUT_DIR = os.path.join(BASE_DIR,"text-dataset")
+
+path = kagglehub.dataset_download(
+    "notshrirang/spotify-million-song-dataset",
+    output_dir=OUTPUT_DIR
+)
+
+print("Dataset descargado en :", path)

@@ -2,4 +2,4 @@ kagglehub
 psycopg2-binary
 pandas
 Pillow
-mutagen
+mutagenpip 

@@ -1,8 +1,10 @@
 import pandas as pd
 import psycopg2
+import os
 
-# No cambiar ruta
-CSV_FILE = "spotify_songs.csv"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+CSV_FILE = os.path.join(BASE_DIR,"text-dataset","spotify_songs.csv")
 
 def connect_db():
     return psycopg2.connect(
@@ -39,7 +41,6 @@ def limpiar_float(valor):
         return None
 
 
-
 def leer_csv():
     try:
         df = pd.read_csv(CSV_FILE, encoding="utf-8")
@@ -52,7 +53,6 @@ def leer_csv():
     return df
 
 
-
 def limpiar_fecha(valor):
     if pd.isna(valor):
         return None
@@ -60,8 +60,6 @@ def limpiar_fecha(valor):
     if pd.isna(fecha):
         return None
     return fecha.date()
-
-
 
 
 def importar_textos():
