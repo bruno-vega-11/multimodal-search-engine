@@ -2,8 +2,14 @@ kagglehub
 psycopg2-binary
 pandas
 Pillow
-mutagenpip 
+mutagen
 pandas
 nltk
 psycopg2-binary
 python-dotenv
+opencv-python
+faiss-cpu
+numpy
+tqdm 
+torch
+kornia
