@@ -1,0 +1,17 @@
+pyvenv.cfg
+**/__pycache__/
+*.pyc
+texto/data/index/*
+texto/data/processed/*
+texto/data/raw/*
+!texto/data/index/.gitkeep
+!texto/data/processed/.gitkeep
+!texto/data/raw/.gitkeep
+
+# 1. Ignorar la carpeta de datos por defecto
+imagen/data/
+
+# 2. Permitir la carpeta raw y TODO lo que contenga adentro paso a paso
+!imagen/data/raw/
+!imagen/data/raw/**
+!imagen/data/raw/.gitkeep
