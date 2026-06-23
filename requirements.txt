@@ -1,15 +1,28 @@
-kagglehub
-psycopg2-binary
+# Backend Core
+fastapi
+uvicorn
+python-multipart
+pydantic
+
+# Datos y Base de Datos
 pandas
-Pillow
-mutagen
-pandas
-nltk
+numpy
 psycopg2-binary
 python-dotenv
+
+# Visión de Computación e Imágenes
 opencv-python
-faiss-cpu
-numpy
-tqdm 
-torch
+Pillow
 kornia
+
+# Audio y NLP
+mutagen
+nltk
+
+# Machine Learning y Búsqueda
+torch
+faiss-cpu
+kagglehub
+
+# Utilidades
+tqdm
