@@ -7,3 +7,5 @@ pandas
 nltk
 psycopg2-binary
 python-dotenv
+cv2
+faiss
