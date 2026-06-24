@@ -28,30 +28,7 @@ def main():
     # Si tienes un download_audio_dataset.py, lo agregas aquí
     
     # -------------------------------------------------------------------------
-    # PASO 2: Procesamiento y construcción de índices por modalidad
-    # Aquí asumimos nombres lógicos para los scripts internos de cada carpeta.
-    # Usamos el parámetro 'cwd' para que Python sepa que debe pararse en esa carpeta.
-    # -------------------------------------------------------------------------
-    print("--- FASE 2: PROCESAMIENTO E INDEXACIÓN ---")
-    
-    # Subpipeline de Texto
-    print("Procesando Texto...")
-    run_script("src/main.py",cwd="texto")
-    run_script("src/build_index.py",cwd="texto")
-    run_script("src/build_dictionary.py",cwd="texto")
-    run_script("src/build_norms.py",cwd="texto")
-    #run_script("src/load_to_postgres.py",cwd="texto")
-
-    # Subpipeline de Imagen
-    print("Procesando Imágenes (SIFT)...")
-    # run_script("src/extraer_sift.py", cwd="imagen")
-    
-    # Subpipeline de Audio
-    print("Procesando Audios (MFCC)...")
-    # run_script("src/extraer_mfcc.py", cwd="audio")
-
-    # -------------------------------------------------------------------------
-    # PASO 3: Inserción en la Base de Datos (Scripts en la raíz)
+    # PASO 2: Inserción en la Base de Datos (Scripts en la raíz)
     # -------------------------------------------------------------------------
     print("--- FASE 3: INSERCIÓN EN POSTGRESQL ---")
     # Nota: Asegúrate de que Docker esté prendido antes de llegar aquí
