@@ -37,7 +37,7 @@ class VisualQuantizer:
         return histogram.tolist()
 
 if __name__ == "__main__":
-    quantizer = VisualQuantizer("codebook_kmeans.npy", k_clusters=1000)
+    quantizer = VisualQuantizer("./codebook_kmeans.npy", k_clusters=1000)
     
     imagen_prueba = "test_image.jpg" 
     
