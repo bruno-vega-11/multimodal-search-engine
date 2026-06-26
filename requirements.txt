@@ -13,3 +13,8 @@ numpy
 tqdm 
 torch
 kornia
+librosa
+soundfile
+numpy
+scipy
+scikit-learn
