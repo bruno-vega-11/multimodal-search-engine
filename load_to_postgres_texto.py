@@ -1,5 +1,4 @@
-# src/load_to_postgres.py
-#
+
 # Migra la persistencia de texto (Fase 2) de archivos locales
 # (JSON/JSONL + indice SPIMI en disco) a tablas Postgres.
 #
@@ -27,12 +26,10 @@ from db import get_connection
 BATCH_SIZE = 5000
 
 def load_schema(conn, schema_path=None):
-
     if schema_path is None:
-        BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # -> texto
-        schema_path = os.path.join(BASE_DIR,"src","sql","schema.sql")
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        schema_path = os.path.join(BASE_DIR,"init.sql")
 
-    print("Aplicando schema...")
 
     with open(schema_path, encoding="utf-8") as f:
         schema_sql = f.read()
@@ -158,8 +155,8 @@ def load_term_index(conn, idf_file, index_file):
 
 
 def main():
-    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # -> texto
-    DATA = os.path.join(BASE_DIR,"data")
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__)) # -> texto
+    DATA = os.path.join(BASE_DIR,"texto","data")
 
     conn = get_connection()
     try:

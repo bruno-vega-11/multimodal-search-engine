@@ -28,7 +28,7 @@
 import math
 from collections import Counter, defaultdict
 
-from preprocess import preprocess_text
+from texto.src.preprocess import preprocess_text
 from db import get_connection, get_dict_cursor
 
 

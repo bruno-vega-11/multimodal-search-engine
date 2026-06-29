@@ -4,8 +4,7 @@ import psycopg2
 from mutagen.mp3 import MP3
 from mutagen.easyid3 import EasyID3
 
-# Tras haber descargado los audios, modificar esta rutas
-AUDIO_DIR = r"E:\Dataset-Musical-Inteligente\fma_small"
+AUDIO_DIR = r"" #ruta del dataset
 def connect_db():
     return psycopg2.connect(
         dbname="sistema_multimodal",

@@ -7,8 +7,8 @@ pydantic
 # Datos y Base de Datos
 pandas
 numpy
-psycopg2-binary
-python-dotenv
+psycopg[binary]
+python-dotenv==1.0.1
 
 # Visión de Computación e Imágenes
 opencv-python
@@ -26,3 +26,12 @@ kagglehub
 
 # Utilidades
 tqdm
+numpy
+tqdm 
+torch
+kornia
+librosa
+soundfile
+numpy
+scipy
+scikit-learn
