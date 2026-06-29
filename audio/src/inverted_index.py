@@ -1,5 +1,5 @@
 import json
-
+from audio_utils import INDEX_FILE_PATH
 class InvertedIndex:
    
     def __init__(self):
@@ -17,7 +17,7 @@ class InvertedIndex:
                  
             self.index[word_id_str].append((audio_id, frequency))
 
-    def save_to_disk(self, output_path="acoustic_inverted_index.json"):
+    def save_to_disk(self, output_path=INDEX_FILE_PATH):
         try:
             with open(output_path, 'w') as f:
                 json.dump(self.index, f, indent=2)

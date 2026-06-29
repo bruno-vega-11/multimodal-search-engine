@@ -8,6 +8,15 @@ from sklearn.cluster import MiniBatchKMeans
 from psycopg2 import sql
 from dotenv import load_dotenv
 import gc
+
+SRC_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(SRC_DIR)
+
+CODEBOOK_DIR = os.path.join(PROJECT_ROOT, "data", "codebook")
+PROCESSED_DIR = os.path.join(PROJECT_ROOT, "data", "processed")
+
+CODEBOOK_FILE_PATH = os.path.join(CODEBOOK_DIR, "acoustic_codebook.npy")
+INDEX_FILE_PATH = os.path.join(PROCESSED_DIR, "acoustic_inverted_index.json")
  
 load_dotenv()
 
@@ -104,46 +113,9 @@ class AcousticCodebookBuilder:
         if mfcc_features is not None and len(mfcc_features) > 0:
             self.kmeans.partial_fit(mfcc_features)
 
-    def export_codebook(self, output_path="acoustic_codebook.npy"):
+    def export_codebook(self, output_path=CODEBOOK_FILE_PATH):
         centroids = self.kmeans.cluster_centers_
         np.save(output_path, centroids)
         print(f"Codebook exportado exitosamente a {output_path} con forma {centroids.shape}")
         return centroids
 
-def run_pipeline():
-    print("Iniciando Fase 2: Módulos de Extracción y Codebook para Audio...")
-    
-    db_manager = AudioDatabaseManager()
-    extractor = AcousticFeatureExtractor(window_ms=100) 
-    codebook_builder = AcousticCodebookBuilder(n_clusters=500) 
-    batch_size = 10 
-    offset = 0 
-    total_processed = 0 
-    try:
-        while True:
-            records = db_manager.get_audio_batch(batch_size=batch_size, offset=offset)
-            if not records:
-                break
-                
-            for record_id, audio_bytea in records:
-                print(f"Procesando pista ID: {record_id}")
-                mfcc_vectors = extractor.extract_from_bytea(audio_bytea)
-                
-                if mfcc_vectors is not None:
-                    codebook_builder.partial_fit(mfcc_vectors)
-                    
-            total_processed += len(records)
-            offset += batch_size
-            gc.collect() 
-        print(f"\nProcesamiento completado. Total de audios analizados: {total_processed}")
-        codebook_builder.export_codebook()
-        
-    except Exception as e:
-        print(f"Error en el pipeline principal: {e}") 
-        print("Exportando el codebook parcial para no perder el progreso...")
-        codebook_builder.export_codebook("acoustic_codebook_parcial.npy")
-    finally:
-        db_manager.close()
-
-if __name__ == "__main__":
-    run_pipeline()

@@ -2,13 +2,13 @@ import gc
 from audio_utils import AudioDatabaseManager, AcousticFeatureExtractor
 from audio_quantizer import AudioQuantizer
 from inverted_index import InvertedIndex
-
+from audio_utils import INDEX_FILE_PATH
 def run_indexing_pipeline():
     print("Iniciando Generación de Histogramas e Índice Invertido...")
      
     db_manager = AudioDatabaseManager()
     extractor = AcousticFeatureExtractor(window_ms=100)
-    quantizer = AudioQuantizer(codebook_path="acoustic_codebook.npy")
+    quantizer = AudioQuantizer()
     inverted_index = InvertedIndex()
     
     batch_size = 10
@@ -38,12 +38,12 @@ def run_indexing_pipeline():
             
         print(f"\nProceso completado. Total de audios indexados: {total_indexed}")
          
-        inverted_index.save_to_disk("acoustic_inverted_index.json")
+        inverted_index.save_to_disk()
         
     except Exception as e:
         print(f"Error en el pipeline de indexación: {e}")
         # Guardar progreso parcial en caso de caída
-        inverted_index.save_to_disk("acoustic_inverted_index_PARCIAL.json")
+        inverted_index.save_to_disk(INDEX_FILE_PATH.replace(".json", "_PARCIAL.json"))
     finally:
         db_manager.close()
 

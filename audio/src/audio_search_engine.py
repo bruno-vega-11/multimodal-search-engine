@@ -3,9 +3,10 @@ import math
 from collections import defaultdict
 from audio_utils import AcousticFeatureExtractor
 from audio_quantizer import AudioQuantizer
+from audio_utils import CODEBOOK_FILE_PATH, INDEX_FILE_PATH
 
 class AudioSearchEngine:
-    def __init__(self, index_path="acoustic_inverted_index.json", codebook_path="acoustic_codebook.npy"):
+    def __init__(self, index_path=INDEX_FILE_PATH, codebook_path=CODEBOOK_FILE_PATH):
         print("Inicializando Motor de Alta Precisión (TF-IDF + Cosine Similarity)...")
         
         try:
