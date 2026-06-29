@@ -75,3 +75,18 @@ CREATE TABLE IF NOT EXISTS fashion_images (
     ruta_original TEXT NOT NULL,
     histograma_visual vector(1000) 
 );
+
+-- AUDIO
+CREATE TABLE audio_dataset (
+    audio_id SERIAL PRIMARY KEY,
+    filename VARCHAR(255) NOT NULL UNIQUE,
+    track_number INT,
+    title VARCHAR(255),
+    collaborators TEXT,
+    album VARCHAR(255),
+    audio_data BYTEA NOT NULL,
+    content_type VARCHAR(50) DEFAULT 'audio/mpeg',
+    file_size BIGINT,
+    duration_seconds DOUBLE PRECISION,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
