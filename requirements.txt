@@ -7,8 +7,8 @@ pydantic
 # Datos y Base de Datos
 pandas
 numpy
-psycopg2-binary
-python-dotenv
+psycopg[binary]
+python-dotenv==1.0.1
 
 # Visión de Computación e Imágenes
 opencv-python

@@ -1,57 +1,77 @@
+
+-- TEXTO
+-- ------------------------------------------------------------
+-- codebook: top-k palabras del vocabulario (Fase 2 / Modulo Codebook)
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS codebook (
+    term        TEXT PRIMARY KEY,
+    rank        INTEGER NOT NULL   -- posicion en el top-k (0 = mas frecuente)
+);
+
+-- ------------------------------------------------------------
+-- term_index: idf + posting list de cada termino, fusionados.
+--
+-- Reemplaza las tablas separadas "idf" y "postings" (fila por
+-- chunk_id) por una sola fila por termino, con la posting list
+-- completa empacada como JSONB:
+--
+--   [[chunk_id, tf], [chunk_id, tf], ...]
+--
+-- Justificacion: el patron de uso de este proyecto es carga
+-- unica (se construye una sola vez al procesar el dataset) y
+-- solo lecturas despues (search.py nunca actualiza un posting
+-- individual). Con ese patron, JSONB es preferible a una fila
+-- por (term, chunk_id):
+--   - 5,000 filas en vez de ~4.4 millones
+--   - una sola lectura por termino trae idf + posting list
+--     completa (antes eran 2 queries a 2 tablas distintas)
+--   - mucho menor tamaño en disco (sin overhead de fila repetido
+--     4.4 millones de veces)
+-- El costo tipico de JSONB (reescribir el array completo en
+-- cada UPDATE) no aplica aqui porque nunca se actualiza un
+-- posting suelto despues de la carga inicial.
+--
+-- Esto es independiente del experimento de Fase 3, donde se
+-- compara tu indice invertido propio (SPIMI, archivo
+-- final_index.idx, que ya tiene exactamente este mismo formato
+-- por linea) contra un indice GIN nativo de Postgres sobre la
+-- tabla "metadata".
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS term_index (
+    term        TEXT PRIMARY KEY REFERENCES codebook(term),
+    idf_value   DOUBLE PRECISION NOT NULL,
+    postings    JSONB NOT NULL
+);
+
+-- ------------------------------------------------------------
+-- metadata: un row por chunk (parrafo de cancion)
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS metadata (
+    chunk_id     INTEGER PRIMARY KEY,
+    document_id  INTEGER NOT NULL,
+    title        TEXT NOT NULL,
+    artist       TEXT NOT NULL,
+    text         TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_metadata_document_id
+    ON metadata (document_id);
+
+-- ------------------------------------------------------------
+-- doc_norms: norma euclidiana del vector tf-idf de cada chunk
+-- (necesaria para normalizar el coseno en la busqueda)
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS doc_norms (
+    chunk_id    INTEGER PRIMARY KEY REFERENCES metadata(chunk_id),
+    norm_value  DOUBLE PRECISION NOT NULL
+);
+
+-- IMAGEN
 CREATE EXTENSION IF NOT EXISTS vector;
 
-CREATE TABLE images_dataset (
-    image_id SERIAL PRIMARY KEY,
-    filename VARCHAR(255) NOT NULL UNIQUE,
-    image_data BYTEA NOT NULL,
-    content_type VARCHAR(50) DEFAULT 'image/jpeg',
-    file_size BIGINT,
-	width INT,
-    height INT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-
-CREATE TABLE audio_dataset (
-    audio_id SERIAL PRIMARY KEY,
-    filename VARCHAR(255) NOT NULL UNIQUE,
-    track_number INT,
-    title VARCHAR(255),
-    collaborators TEXT,
-    album VARCHAR(255),
-    audio_data BYTEA NOT NULL,
-    content_type VARCHAR(50) DEFAULT 'audio/mpeg',
-    file_size BIGINT,
-    duration_seconds DOUBLE PRECISION,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE text_dataset (
-    text_id SERIAL PRIMARY KEY,
-    track_id VARCHAR(100) UNIQUE,
-    track_name TEXT,
-    track_artist TEXT,
-    lyrics TEXT,
-    track_popularity INT,
-    track_album_id VARCHAR(100),
-    track_album_name TEXT,
-    track_album_release_date DATE,
-    playlist_name TEXT,
-    playlist_id VARCHAR(100),
-    playlist_genre VARCHAR(100),
-    playlist_subgenre VARCHAR(100),
-    danceability DOUBLE PRECISION,
-    energy DOUBLE PRECISION,
-    key_ INT,
-    loudness DOUBLE PRECISION,
-    mode_ INT,
-    speechiness DOUBLE PRECISION,
-    acousticness DOUBLE PRECISION,
-    instrumentalness DOUBLE PRECISION,
-    liveness DOUBLE PRECISION,
-    valence DOUBLE PRECISION,
-    tempo DOUBLE PRECISION,
-    duration_ms INT,
-    language_ VARCHAR(20),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE IF NOT EXISTS fashion_images (
+    id SERIAL PRIMARY KEY,
+    nombre_archivo VARCHAR(255) NOT NULL,
+    ruta_original TEXT NOT NULL,
+    histograma_visual vector(1000) 
 );
