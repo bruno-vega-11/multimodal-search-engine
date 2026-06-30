@@ -1,19 +1,18 @@
+import os
 import json
 from tqdm import tqdm
 
 # Importamos las funciones directamente de tu archivo db.py
-from db import get_connection, get_dict_cursor
+from db import get_connection
 
-def subir_a_bd(archivo_datos):
-    print("1. Conectando a PostgreSQL a través de db.py...")
+def subir_a_bd():
+    print("🔌 1. Conectando a PostgreSQL a través de db.py...")
     try:
-        # Reutilizamos tu función para abrir la conexión
+        # Reutilizamos tu función para abrir la conexión en psycopg v3
         conn = get_connection()
         cursor = conn.cursor() 
-        # Si en algún momento necesitas que el cursor devuelva diccionarios, 
-        # podrías usar: cursor = get_dict_cursor(conn)
     except Exception as e:
-        print(f"Error conectando a la base de datos: {e}")
+        print(f"❌ Error conectando a la base de datos: {e}")
         return
 
     # Mantenemos tu consulta original (con el cast ::vector de pgvector)
@@ -22,11 +21,18 @@ def subir_a_bd(archivo_datos):
         VALUES (%s, %s, %s::vector);
     """
 
+    # --- CONFIGURACIÓN DE RUTA DINÁMICA CORREGIDA ---
+    # Como el script está en la raíz 'multimodal-search-engine', SCRIPT_DIR obtiene esa misma carpeta.
+    SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+    
+    # Entramos directo a la subcarpeta del dataset de imágenes sin retroceder de más
+    archivo_datos = os.path.join(SCRIPT_DIR, "imagen", "data", "processed", "vectores_fashion.jsonl")
+
+    print(f"📂 2. Leyendo datos desde: {archivo_datos}")
+    
     procesados = 0
     errores = 0
 
-    print(f"\n2. Leyendo datos desde '{archivo_datos}'...")
-    
     try:
         # Contamos las líneas primero para que la barra de tqdm sea exacta
         with open(archivo_datos, 'r', encoding='utf-8') as f:
@@ -34,7 +40,7 @@ def subir_a_bd(archivo_datos):
 
         # Abrimos el archivo y lo procesamos línea por línea (eficiente en memoria)
         with open(archivo_datos, 'r', encoding='utf-8') as f:
-            for linea in tqdm(f, total=total_lineas, desc="Insertando a BD", unit="img"):
+            for linea in tqdm(f, total=total_lineas, desc="Insertando vectores pgvector", unit="img"):
                 try:
                     linea = linea.strip()
                     if not linea:
@@ -43,28 +49,33 @@ def subir_a_bd(archivo_datos):
                     # Reconstruimos el diccionario desde el texto JSON
                     dato = json.loads(linea)
                     
-                    # Ejecutamos el INSERT con tus datos
+                    # Convertimos la lista del histograma a string con formato de vector para pgvector: '[0.1, 0.2, ...]'
+                    histograma_str = str(dato["histograma"])
+                    
+                    # Ejecutamos el INSERT
                     cursor.execute(insert_query, (
                         dato["nombre_archivo"], 
                         dato["ruta_original"], 
-                        dato["histograma"]
+                        histograma_str
                     ))
                     procesados += 1
                     
-                    # Commit en bloques de 1000 por seguridad y velocidad
+                    # Commit en bloques de 1000 por rendimiento y seguridad
                     if procesados % 1000 == 0:
                         conn.commit()
                         
                 except Exception as e:
                     errores += 1
+                    # Usamos tqdm.write para no romper la barra de carga en consola
+                    tqdm.write(f"❌ Error en línea {procesados + errores}: {e}")
                     continue
                     
         # Commit final para los registros restantes
         conn.commit()
-        print("\n💾 ¡Todos los cambios guardados correctamente!")
+        print("\n💾 ¡Todos los cambios guardados correctamente en PostgreSQL!")
         
     except FileNotFoundError:
-        print(f"❌ No se encontró el archivo '{archivo_datos}'.")
+        print(f"❌ Error crítico: No se encontró el archivo JSONL en la ruta calculada:\n   {archivo_datos}")
     except Exception as e:
         print(f"❌ Ocurrió un error inesperado durante la carga: {e}")
     finally:
@@ -74,11 +85,8 @@ def subir_a_bd(archivo_datos):
         print("🔌 Conexión a la base de datos cerrada limpiamente.")
     
     print("\n=== RESUMEN DE INSERCIÓN ===")
-    print(f"✅ Registros inyectados en la Base de Datos: {procesados}")
-    print(f"❌ Errores en BD: {errores}")
+    print(f"✅ Registros inyectados en fashion_images: {procesados}")
+    print(f"❌ Errores omitidos:                      {errores}")
 
 if __name__ == "__main__":
-    # Nombre de tu archivo JSON Lines
-    ARCHIVO_DATOS = "vectores_fashion.jsonl"
-    
-    subir_a_bd(ARCHIVO_DATOS)
+    subir_a_bd()

@@ -1,13 +1,29 @@
 import json
 import math
+import os
 from collections import defaultdict
-from audio_utils import AcousticFeatureExtractor
-from audio_quantizer import AudioQuantizer
+from audio.src.audio_utils import AcousticFeatureExtractor
+from audio.src.audio_quantizer import AudioQuantizer
 
 class AudioSearchEngine:
-    def __init__(self, index_path="acoustic_inverted_index.json", codebook_path="acoustic_codebook.npy"):
+    def __init__(self, index_path=None, codebook_path=None):
         print("Inicializando Motor de Alta Precisión (TF-IDF + Cosine Similarity)...")
         
+        SRC_DIR = os.path.dirname(os.path.abspath(__file__))
+
+        AUDIO_ROOT = os.path.dirname(SRC_DIR)
+
+        if index_path is None:
+            index_path = os.path.join(AUDIO_ROOT, "data", "processed", "acoustic_inverted_index.json")
+        
+        if codebook_path is None:
+            codebook_path = os.path.join(AUDIO_ROOT, "data", "codebook", "acoustic_codebook.npy")
+
+        if not os.path.exists(index_path):
+            raise FileNotFoundError(f"No se encontró el índice invertido en: {index_path}")
+        if not os.path.exists(codebook_path):
+            raise FileNotFoundError(f"No se encontró el codebook en: {codebook_path}")
+
         try:
             with open(index_path, 'r') as f:
                 self.inverted_index = json.load(f)
