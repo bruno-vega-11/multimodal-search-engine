@@ -1,14 +1,8 @@
+# Configuración del entorno y caché de Python
 pyvenv.cfg
 **/__pycache__/
 *.pyc
-texto/data/index/*
-texto/data/processed/*
-texto/data/raw/*
-!texto/data/index/.gitkeep
-!texto/data/processed/.gitkeep
-!texto/data/raw/.gitkeep
 
-# 1. Ignorar la carpeta de datos por defecto
-imagen/data/
-!imagen/data/codebook
-!imagen/data/processed
+# --- BLOQUEO CRÍTICO DE DATOS PESADOS (20GB+) ---
+# Esto prohíbe CUALQUIER carpeta "raw" en cualquier parte del proyecto
+**/raw/**
