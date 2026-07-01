@@ -7,11 +7,9 @@ import soundfile as sf
 from tqdm import tqdm
 from sklearn.cluster import MiniBatchKMeans
 
-# Importamos tu conexión centralizada basada en psycopg v3
 from db import get_connection
 
 class AcousticFeatureExtractor:
-    """Maneja las ventanas deslizantes y la extracción matemática de vectores MFCC."""
     def __init__(self, sample_rate=22050, window_ms=100, overlap=0.5, n_mfcc=20):
         self.sr = sample_rate
         self.n_mfcc = n_mfcc
@@ -20,16 +18,12 @@ class AcousticFeatureExtractor:
 
     def extract_from_bytea(self, bytea_data):
         try:
-            # En psycopg v3, los campos BYTEA se leen directamente como objetos bytes de Python
             audio_io = io.BytesIO(bytea_data)
             y, sr = sf.read(audio_io)
-            
             if len(y.shape) > 1:
                 y = librosa.to_mono(y.T)
-                
             if sr != self.sr:
                 y = librosa.resample(y, orig_sr=sr, target_sr=self.sr)
-
             mfccs = librosa.feature.mfcc(
                 y=y, 
                 sr=self.sr, 
@@ -46,14 +40,13 @@ class AcousticFeatureExtractor:
 
 
 class AcousticCodebookBuilder:
-    """Entrena incrementalmente K-Means para generar el diccionario de palabras acústicas."""
     def __init__(self, n_clusters=500):
         self.n_clusters = n_clusters
         self.kmeans = MiniBatchKMeans(
             n_clusters=self.n_clusters, 
             random_state=42, 
             batch_size=1024,
-            n_init="auto"  # Evita advertencias de deprecación de sklearn
+            n_init="auto" 
         )
 
     def partial_fit(self, mfcc_features):
@@ -61,30 +54,23 @@ class AcousticCodebookBuilder:
             self.kmeans.partial_fit(mfcc_features)
 
     def export_codebook(self, output_path):
-        # Aseguramos que el directorio de salida exista antes de guardar
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        
         centroids = self.kmeans.cluster_centers_
         np.save(output_path, centroids)
-        print(f"\n💾 Codebook exportado exitosamente a: {output_path} (Shape: {centroids.shape})")
+        print(f"\nCodebook exportado exitosamente a: {output_path} (Shape: {centroids.shape})")
         return centroids
 
 
 def run_pipeline():
-    print("🎙️ Iniciando Fase 2: Extracción de Características y Entrenamiento del Codebook...")
-    
-    # 1. Configuración dinámica de rutas usando os
+    print("Iniciando Fase 2: Extracción de Características y Entrenamiento del Codebook...")
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-    AUDIO_ROOT = os.path.dirname(SCRIPT_DIR) # Sube de src/ a audio/
+    AUDIO_ROOT = os.path.dirname(SCRIPT_DIR) 
     
     RUTA_CODEBOOK = os.path.join(AUDIO_ROOT, "data", "codebook", "acoustic_codebook.npy")
     RUTA_PARCIAL = os.path.join(AUDIO_ROOT, "data", "codebook", "acoustic_codebook_parcial.npy")
-
-    # 2. Inicialización de componentes del sistema
     extractor = AcousticFeatureExtractor(window_ms=100) 
     codebook_builder = AcousticCodebookBuilder(n_clusters=500) 
     
-    # 3. Conexión centralizada usando db.py
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -92,23 +78,19 @@ def run_pipeline():
         print(f"❌ Error crítico al conectar a la base de datos mediante db.py: {e}")
         return
 
-    # Usamos consultas paginadas dinámicas nativas con LIMIT/OFFSET
     query = "SELECT id, audio_data FROM audio_dataset ORDER BY id LIMIT %s OFFSET %s;"
-    
-    # Obtenemos primero el conteo general para configurar la barra de progreso tqdm
     try:
         cursor.execute("SELECT COUNT(*) FROM audio_dataset;")
         total_audios = cursor.fetchone()[0]
-        print(f"🎵 Total de pistas encontradas en la BD para analizar: {total_audios}")
+        print(f"Total de pistas encontradas en la BD para analizar: {total_audios}")
     except Exception as e:
-        print(f"⚠ No se pudo precalcular el total de registros: {e}")
+        print(f"No se pudo precalcular el total de registros: {e}")
         total_audios = None
 
     batch_size = 20  # Ajustado a 20 para optimizar el throughput de datos en red
     offset = 0 
     total_processed = 0 
 
-    # 4. Bucle principal de procesamiento incremental (Batching)
     pbar = tqdm(total=total_audios, desc="Progreso del Pipeline", unit="track")
     
     try:
@@ -117,7 +99,7 @@ def run_pipeline():
             records = cursor.fetchall()
             
             if not records:
-                break # Rompe el ciclo si ya no quedan registros por procesar
+                break
                 
             for record_id, audio_bytea in records:
                 # Extracción matemática en memoria RAM
@@ -134,19 +116,19 @@ def run_pipeline():
             gc.collect() # Limpieza explícita del recolector de basura por los objetos binarios consumidos
             
         pbar.close()
-        print(f"\n✅ Procesamiento completado con éxito. Total de audios analizados: {total_processed}")
+        print(f"\n Procesamiento completado con éxito. Total de audios analizados: {total_processed}")
         codebook_builder.export_codebook(RUTA_CODEBOOK)
         
     except Exception as e:
         pbar.close()
-        print(f"\n❌ Error fatal en el pipeline principal: {e}") 
-        print("💾 Salvando el estado actual... Exportando codebook parcial.")
+        print(f"\nError fatal en el pipeline principal: {e}") 
+        print("Salvando el estado actual... Exportando codebook parcial.")
         codebook_builder.export_codebook(RUTA_PARCIAL)
         
     finally:
         cursor.close()
         conn.close()
-        print("🔌 Conexión a PostgreSQL liberada limpiamente.")
+        print("Conexión a PostgreSQL liberada limpiamente.")
 
 if __name__ == "__main__":
     run_pipeline()
