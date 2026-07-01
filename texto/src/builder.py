@@ -1,5 +1,3 @@
-# src/builder.py
-
 import csv
 import json
 import math
@@ -48,24 +46,17 @@ def build_collection(csv_file, processed_file, codebook_file, idf_file, metadata
                     }
 
                 metadata_out.write(json.dumps(metadata_record) + "\n")
-
                 term_counter.update(tokens)
-
                 unique_terms = set(tokens)
-
                 for term in unique_terms:
                     df_counter[term] += 1
-
                 total_chunks += 1
-
                 chunk_id += 1
-
                 if chunk_id % 10000 == 0:
                     print(f"Chunks procesados: {chunk_id}")
 
     print(f"\nTotal chunks: {total_chunks}")
     print(f"Vocabulario total: {len(term_counter)}")
-
     top_terms = (term_counter.most_common(top_k))
 
     codebook = {}
