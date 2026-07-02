@@ -1,24 +1,4 @@
 
-# Migra la persistencia de texto (Fase 2) de archivos locales
-# (JSON/JSONL + indice SPIMI en disco) a tablas Postgres.
-#
-# Corre esto UNA VEZ despues de haber generado:
-#   data/processed/codebook.json
-#   data/processed/idf.json
-#   data/processed/metadata.json
-#   data/index/final_index.idx
-#   data/index/dictionary.json
-#   data/index/doc_norms.json
-#
-# (es decir, despues de correr main.py, build_index.py,
-#  build_final_index.py, build_dictionary.py y build_norms.py)
-#
-# Usa psycopg v3 (no psycopg2). executemany() reemplaza a
-# psycopg2.extras.execute_values(); en psycopg v3, executemany
-# ya hace batching eficiente internamente.
-#
-# Uso:
-#   python src/load_to_postgres.py
 import os
 import json
 from db import get_connection
@@ -105,25 +85,7 @@ def load_doc_norms(conn, doc_norms_file):
 
 
 def load_term_index(conn, idf_file, index_file):
-    """
-    Fusiona idf.json y final_index.idx en la tabla term_index:
-    una fila por termino, con su idf_value y su posting list
-    completa empacada como JSONB.
-
-    final_index.idx ya trae cada termino con su posting list en
-    el formato exacto que necesitamos como JSONB:
-        {"term": "aa", "postings": [[chunk_id, tf], ...]}
-    asi que la carga es casi directa, solo agregamos el idf_value
-    correspondiente a cada termino antes de insertar.
-
-    Se usa COPY (no INSERT/executemany): aunque ahora son solo
-    ~5,000 filas (una por termino, no por chunk_id), cada valor
-    de "postings" es un array JSON que puede tener miles de
-    elementos (ej. "love" con ~57,809 pares chunk_id/tf), asi
-    que el volumen total de datos a transferir sigue siendo
-    grande. COPY evita el overhead de armar una sentencia SQL
-    por fila para esos blobs.
-    """
+    
 
     print("Cargando term_index (idf + postings combinados)...")
 
