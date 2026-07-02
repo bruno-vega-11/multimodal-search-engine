@@ -3,11 +3,13 @@ import glob
 from tqdm import tqdm
 from mutagen.mp3 import MP3
 from mutagen.easyid3 import EasyID3
+from dotenv import load_dotenv
 
-# Importamos la conexión centralizada desde tu db.py
 from db import get_connection
 
-AUDIO_DIR = r"" #ruta del dataset
+
+load_dotenv()
+AUDIO_DIR = os.getenv("AUDIO_DIR", r"")
 
 def obtener_metadata_audio(audio_path):
     filename = os.path.basename(audio_path)
@@ -79,14 +81,11 @@ def insertar_audio(cursor, data):
 def cargar_audios_a_postgres():
     patron_busqueda = os.path.join(AUDIO_DIR, "**" , "*.mp3")
     audio_files = glob.glob(patron_busqueda, recursive=True)
-    total_audios = len(audio_files)
-    print(f"🎵 Cantidad de audios encontrados: {total_audios}")
-    
+    total_audios = len(audio_files)    
     if total_audios == 0:
         print("⚠ No se encontraron archivos .mp3 en la ruta especificada.")
         return
 
-    print("🔌 Conectando a PostgreSQL a través de db.py...")
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -99,28 +98,23 @@ def cargar_audios_a_postgres():
     errores = 0
 
     print("\n🚀 Iniciando carga de audios...")
-    # Agregamos tqdm para tener un feedback visual limpio del lote completo
     for i, audio_path in enumerate(tqdm(audio_files, desc="Inyectando audios", unit="track"), start=1):
         try:
             data = obtener_metadata_audio(audio_path)
             insertar_audio(cursor, data)
             
-            # Verificamos si la fila fue insertada u omitida por el ON CONFLICT
             if cursor.rowcount == 1:
                 insertados += 1
             else:
                 ignorados += 1
 
-            # Commit en bloques de 200 por rendimiento y seguridad
             if i % 200 == 0:
                 conn.commit()
 
         except Exception as e:
             errores += 1
-            # Imprimimos el error de manera controlada para no romper la barra de carga
             tqdm.write(f"❌ Error procesando {os.path.basename(audio_path)}: {e}")
 
-    # Commit final para los registros sobrantes
     conn.commit()
     cursor.close()
     conn.close()
