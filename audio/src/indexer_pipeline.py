@@ -42,7 +42,6 @@ def run_indexing_pipeline():
         
     except Exception as e:
         print(f"Error en el pipeline de indexación: {e}")
-        # Guardar progreso parcial en caso de caída
         inverted_index.save_to_disk("acoustic_inverted_index_PARCIAL.json")
     finally:
         db_manager.close()
