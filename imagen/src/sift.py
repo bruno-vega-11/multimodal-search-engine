@@ -5,6 +5,18 @@ import os
 import torch
 import kornia.feature as KF
 from tqdm import tqdm
+from dotenv import load_dotenv
+
+load_dotenv()
+
+def env_value(nombre_variable, valor_default):
+    valor = os.getenv(nombre_variable)
+    return valor if valor else valor_default
+
+
+def env_int(nombre_variable, valor_default):
+    valor = os.getenv(nombre_variable)
+    return int(valor) if valor else valor_default
 
 def extract_and_save_sift_gpu(
     image_folder: str,
@@ -73,5 +85,5 @@ def extract_and_save_sift_gpu(
     print(f"Listo. {chunk_id - 1} archivos .npy generados.")
 
 if __name__ == "__main__":
-    CARPETA_IMAGENES = "/workspace/images"
+    CARPETA_IMAGENES = env_value("IMAGE_SIFT_INPUT_DIR", "/workspace/images")
     extract_and_save_sift_gpu(CARPETA_IMAGENES, "sift_descriptors")
