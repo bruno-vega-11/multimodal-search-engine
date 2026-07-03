@@ -1,23 +1,23 @@
-import os
 import nltk
 
 from builder import (build_collection)
 
 nltk.download("stopwords")
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # texto/
-
-CSV_PATH = os.path.join(BASE_DIR, "data", "raw", "spotify_millsongdata.csv")
-PROCESSED_PATH = os.path.join(BASE_DIR, "data", "processed", "processed_chunks.jsonl")
-CODEBOOK_PATH = os.path.join(BASE_DIR, "data", "processed", "codebook.json")
-IDF_PATH = os.path.join(BASE_DIR, "data", "processed", "idf.json")
-METADATA_PATH = os.path.join(BASE_DIR, "data", "processed", "metadata.json")
-
 build_collection(
-    csv_file=CSV_PATH,
-    processed_file=PROCESSED_PATH,
-    codebook_file=CODEBOOK_PATH,
-    idf_file=IDF_PATH,
-    metadata_file=METADATA_PATH,
-    top_k=5000
+    csv_file="data/raw/spotify_millsongdata.csv",
+
+    processed_file="data/processed/processed_chunks.jsonl",
+
+    codebook_file="data/processed/codebook.json",
+
+    idf_file="data/processed/idf.json",
+
+    idf_chunks_file="data/processed/idf_chunks.json",
+
+    metadata_file="data/processed/metadata.json",
+
+    documents_file="data/processed/documents.json",
+
+    top_k=10000
 )
