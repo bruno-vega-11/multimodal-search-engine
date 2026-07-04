@@ -6,9 +6,6 @@ class InvertedIndex:
         self.index = {}
 
     def add_document(self, audio_id, histogram):
-        """
-        Inserta un documento en el índice desglosando su histograma.
-        """
         for word_id, frequency in histogram.items(): 
             word_id_str = str(word_id) 
             

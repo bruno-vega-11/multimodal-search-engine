@@ -1,9 +1,12 @@
+import os
 import numpy as np
 from VisualQuantizer import VisualQuantizer
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 def auditar_codebook_real(ruta_npy):
-    print("=== 1. AUDITORÍA FÍSICA DEL ARCHIVO ===")
-    
     codebook = np.load(ruta_npy)
     
     forma = codebook.shape
@@ -25,7 +28,6 @@ def auditar_codebook_real(ruta_npy):
          print("Correcto: Todos los clusters tienen información visual aprendida.")
 
 def prueba_de_similitud_visual(ruta_npy, img_camisa1, img_camisa2, img_zapato):
-    print("\n=== 2. AUDITORÍA LÓGICA ===")
     
     motor = VisualQuantizer(ruta_npy, k_clusters=1000)
     
@@ -46,11 +48,10 @@ def prueba_de_similitud_visual(ruta_npy, img_camisa1, img_camisa2, img_zapato):
     
 if __name__ == "__main__":
     ARCHIVO_REAL = "codebook_kmeans.npy"
-    
     auditar_codebook_real(ARCHIVO_REAL)
     
-    ruta_a = "1163.jpg" #Polo
-    ruta_b = "1164.jpg" #Polo
-    ruta_c = "1550.jpg" #zapato
+    ruta_a = env_path("IMAGE_TEST_CAMISA_1_PATH", "1163.jpg")
+    ruta_b = env_path("IMAGE_TEST_CAMISA_2_PATH", "1164.jpg")
+    ruta_c = env_path("IMAGE_TEST_ZAPATO_PATH", "1550.jpg")
     
     prueba_de_similitud_visual(ARCHIVO_REAL, ruta_a, ruta_b, ruta_c)

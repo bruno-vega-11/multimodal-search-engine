@@ -1,18 +1,15 @@
 import os
 import glob
-import psycopg2
+from tqdm import tqdm
 from mutagen.mp3 import MP3
 from mutagen.easyid3 import EasyID3
+from dotenv import load_dotenv
 
-AUDIO_DIR = r"" #ruta del dataset
-def connect_db():
-    return psycopg2.connect(
-        dbname="sistema_multimodal",
-        user="postgres",
-        password="123456",
-        host="localhost",
-        port="5433"
-    )
+from db import get_connection
+
+
+load_dotenv()
+AUDIO_DIR = os.getenv("AUDIO_DIR", r"")
 
 def obtener_metadata_audio(audio_path):
     filename = os.path.basename(audio_path)
@@ -75,49 +72,59 @@ def insertar_audio(cursor, data):
         data["title"],
         data["collaborators"],
         data["album"],
-        psycopg2.Binary(data["audio_data"]),
+        data["audio_data"],
         data["content_type"],
         data["file_size"],
         data["duration_seconds"]
     ))
 
 def cargar_audios_a_postgres():
-    audio_files = glob.glob(
-        os.path.join(AUDIO_DIR, "**", "*.mp3"),
-        recursive=True
-    )
-    print("Cantidad de audios encontrados:", len(audio_files))
-    conn = connect_db()
-    cursor = conn.cursor()
+    patron_busqueda = os.path.join(AUDIO_DIR, "**" , "*.mp3")
+    audio_files = glob.glob(patron_busqueda, recursive=True)
+    total_audios = len(audio_files)    
+    if total_audios == 0:
+        print("⚠ No se encontraron archivos .mp3 en la ruta especificada.")
+        return
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+    except Exception as e:
+        print(f"Error crítico de conexión: {e}")
+        return
+
     insertados = 0
     ignorados = 0
     errores = 0
-    for i, audio_path in enumerate(audio_files, start=1):
+
+    print("\n🚀 Iniciando carga de audios...")
+    for i, audio_path in enumerate(tqdm(audio_files, desc="Inyectando audios", unit="track"), start=1):
         try:
             data = obtener_metadata_audio(audio_path)
             insertar_audio(cursor, data)
+            
             if cursor.rowcount == 1:
                 insertados += 1
-                print(f"[{i}] Insertado: {data['filename']} | {data['title']}")
             else:
                 ignorados += 1
-                print(f"[{i}] Ya existía, ignorado: {data['filename']}")
 
             if i % 200 == 0:
                 conn.commit()
-                print(f"Commit realizado hasta el audio {i}")
 
         except Exception as e:
             errores += 1
-            print(f"Error con audio: {audio_path}")
-            print(e)
+            tqdm.write(f"❌ Error procesando {os.path.basename(audio_path)}: {e}")
 
     conn.commit()
     cursor.close()
     conn.close()
-    print("\nProceso terminado")
-    print("Audios insertados:", insertados)
-    print("Audios ignorados por duplicado:", ignorados)
-    print("Errores:", errores)
+    print("🔌 Conexión cerrada limpiamente.")
 
-cargar_audios_a_postgres()
+    print("\n=== RESUMEN DE CARGA DE AUDIOS ===")
+    print(f"✅ Audios insertados exitosamente: {insertados}")
+    print(f"🔕 Audios ignorados (duplicados):  {ignorados}")
+    print(f"❌ Errores en el proceso:          {errores}")
+
+
+if __name__ == "__main__":
+    cargar_audios_a_postgres()

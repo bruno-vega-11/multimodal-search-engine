@@ -17,6 +17,6 @@ generator = token_stream(
 spimi = SPIMI(
     output_dir=os.path.join(BASE_DIR,"data","index"), 
     max_memory_mb=30
-) # se pudee ajustar la memoria
+)
 
 spimi.invert(generator)

@@ -1,4 +1,3 @@
-# src/indexing/merger.py
 
 import os
 import json
@@ -54,11 +53,7 @@ class ExternalMerger:
 
         for f in handles:
             f.close()
-
         print()
-
         print("MERGE COMPLETADO")
-
         print(f"Bloques fusionados: "f"{len(block_files)}")
-
         print(f"Índice final: " f"{self.output_file}")

@@ -16,9 +16,6 @@ class VisualQuantizer:
         print("Motor de inferencia listo.")
 
     def image_to_histogram(self, image_path):
-        """
-        Toma la ruta de una imagen y devuelve un vector (lista) de frecuencias.
-        """
         img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
         if img is None:
             return np.zeros(self.k).tolist()
