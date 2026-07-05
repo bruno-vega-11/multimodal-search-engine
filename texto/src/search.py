@@ -6,7 +6,7 @@ import json
 import math
 from collections import Counter, defaultdict
 
-from preprocess import preprocess_text
+from texto.src.preprocess import preprocess_text
 from metrics import MetricsTracker
 
 class SearchEngine:
