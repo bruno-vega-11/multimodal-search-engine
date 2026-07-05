@@ -1,12 +1,13 @@
 import gc
-from audio_utils import AudioDatabaseManager, AcousticFeatureExtractor,LEXICON_FILE_PATH, INDEX_FILE_PATH
+from audio_utils import  AcousticFeatureExtractor,LEXICON_FILE_PATH, INDEX_FILE_PATH, get_audio_batch
 from audio_quantizer import AudioQuantizer
+import db
 from inverted_index import InvertedIndex
 
 def run_indexing_pipeline():
     print("Iniciando Generación de Histogramas e Índice Invertido...")
      
-    db_manager = AudioDatabaseManager()
+    conn = db.get_connection()
     extractor = AcousticFeatureExtractor(window_ms=500)
     quantizer = AudioQuantizer()
     inverted_index = InvertedIndex()
@@ -17,7 +18,7 @@ def run_indexing_pipeline():
     
     try:
         while True:
-            records = db_manager.get_audio_batch(batch_size=batch_size, offset=offset)
+            records = get_audio_batch(conn, batch_size=batch_size, offset=offset)
             if not records:
                 break 
                 
@@ -47,7 +48,7 @@ def run_indexing_pipeline():
             INDEX_FILE_PATH.replace(".jsonl", "_PARCIAL.jsonl")
         )
     finally:
-        db_manager.close()
+        conn.close()
 
 if __name__ == "__main__":
     run_indexing_pipeline()
