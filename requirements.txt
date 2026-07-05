@@ -25,6 +25,7 @@ faiss-cpu
 kagglehub
 
 # Utilidades
+psutil
 tqdm
 numpy
 tqdm 

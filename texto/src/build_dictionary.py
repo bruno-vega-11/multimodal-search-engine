@@ -1,4 +1,10 @@
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
 import json
+
+from metrics import MetricsTracker
 
 def build_dictionary(index_file, dictionary_file):
     dictionary = {}
@@ -23,5 +29,10 @@ def build_dictionary(index_file, dictionary_file):
     print(f"Dictionary saved: " f"{dictionary_file}")
 
 if __name__ == "__main__":
-    build_dictionary(index_file="data/index/final_index.idx",dictionary_file="data/index/dictionary.json")
-    build_dictionary(index_file="data/index/final_index_chunks.idx",dictionary_file="data/index/dictionary_chunks.json")
+    with MetricsTracker() as m:
+        build_dictionary(index_file="data/index/final_index.idx",dictionary_file="data/index/dictionary.json")
+    print("\nMetricas build_dictionary (songs):", m.result)
+
+    with MetricsTracker() as m:
+        build_dictionary(index_file="data/index/final_index_chunks.idx",dictionary_file="data/index/dictionary_chunks.json")
+    print("\nMetricas build_dictionary (chunks):", m.result)

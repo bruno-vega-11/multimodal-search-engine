@@ -1,8 +1,13 @@
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
 import json
 import math
 from collections import Counter, defaultdict
 
 from preprocess import preprocess_text
+from metrics import MetricsTracker
 
 class SearchEngine:
     def __init__(
@@ -187,9 +192,11 @@ if __name__ == "__main__":
             query = input("\nQuery: ")
             if query.lower() == "exit":
                 break
-            results = engine.search(query)
+            with MetricsTracker() as m:
+                results = engine.search(query)
 
             print()
+            print("Metricas:", m.result)
             print("### Ranking por cancion ###")
             for i, result in enumerate(results["by_song"], start=1):
                 print("=" * 60)
