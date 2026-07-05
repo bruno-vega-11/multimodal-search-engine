@@ -1,8 +1,8 @@
 import gc
 from audio_utils import  AcousticFeatureExtractor,LEXICON_FILE_PATH, INDEX_FILE_PATH, get_audio_batch
 from audio_quantizer import AudioQuantizer
-import db
 from inverted_index import InvertedIndex
+import db
 
 def run_indexing_pipeline():
     print("Iniciando Generación de Histogramas e Índice Invertido...")

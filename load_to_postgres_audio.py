@@ -1,18 +1,14 @@
 import os
 import glob
-import sys
 from dotenv import load_dotenv
 import psycopg2
 from mutagen.mp3 import MP3
 from mutagen.easyid3 import EasyID3
-
-SRC_DIR = os.path.dirname(os.path.abspath(__file__))
-ROOT_DIR = os.path.dirname(os.path.dirname(SRC_DIR))
-sys.path.append(ROOT_DIR)
 import db
 
 load_dotenv()
 AUDIO_DIR = os.getenv("AUDIO_DIR", r"")
+
 
 def obtener_metadata_audio(audio_path):
     filename = os.path.basename(audio_path)

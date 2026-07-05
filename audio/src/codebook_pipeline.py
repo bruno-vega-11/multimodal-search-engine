@@ -1,11 +1,11 @@
 import gc
 import numpy as np
-from audio_utils import  AcousticFeatureExtractor, AcousticCodebookBuilder, CODEBOOK_FILE_PATH, get_audio_batch, db
-
+from audio_utils import  AcousticFeatureExtractor, AcousticCodebookBuilder, CODEBOOK_FILE_PATH
+import db
 def run_pipeline():
     print("Iniciando Fase 2: Módulos de Extracción y Codebook para Audio...")
     
-    conn = db.get_connection()
+    db_manager = db.get_connection()
     
     extractor = AcousticFeatureExtractor(window_ms=500) 
     codebook_builder = AcousticCodebookBuilder(n_clusters=1000) 
@@ -16,7 +16,7 @@ def run_pipeline():
     
     try:
         while True:
-            records = get_audio_batch(conn, batch_size=batch_size, offset=offset)
+            records = db_manager.get_audio_batch(batch_size=batch_size, offset=offset)
             if not records:
                 break
                 
@@ -54,7 +54,7 @@ def run_pipeline():
             print("El modelo falló antes de generar el primer cluster. No hay nada que exportar.")
             
     finally:
-        conn.close()
+        db_manager.close()
 
 if __name__ == "__main__":
     run_pipeline()

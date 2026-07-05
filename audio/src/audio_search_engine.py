@@ -2,8 +2,9 @@ import json
 import math
 import os
 from collections import defaultdict
-from audio.src.audio_quantizer import AudioQuantizer
-from audio.src.audio_utils import AcousticFeatureExtractor, CODEBOOK_FILE_PATH, LEXICON_FILE_PATH, INDEX_FILE_PATH
+from audio_utils import AcousticFeatureExtractor
+from audio_quantizer import AudioQuantizer
+from audio_utils import AcousticFeatureExtractor, CODEBOOK_FILE_PATH, LEXICON_FILE_PATH, INDEX_FILE_PATH
 
 class AudioSearchEngine:
     def __init__(self, lexicon_path=LEXICON_FILE_PATH, postings_path=INDEX_FILE_PATH, codebook_path=CODEBOOK_FILE_PATH):
@@ -60,9 +61,9 @@ class AudioSearchEngine:
         line_bytes = self.postings_file.readline()
         return json.loads(line_bytes.decode('utf-8'))
 
-    def search(self, query_bytes, top_k=5):
-        """Realiza la búsqueda recibiendo los bytes del audio de consulta."""
-        mfcc_vectors = self.extractor.extract_from_bytea(query_bytes)
+    def search(self, query_filepath, top_k=5):
+        """Realiza la búsqueda recibiendo la ruta del archivo de consulta."""
+        mfcc_vectors = self.extractor.extract_from_path(query_filepath)
         if mfcc_vectors is None:
             return []
             
