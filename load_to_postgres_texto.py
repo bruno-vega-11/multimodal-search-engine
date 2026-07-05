@@ -41,6 +41,25 @@ def load_codebook(conn, codebook_file):
     print(f"  {len(rows)} terminos cargados.")
 
 
+def load_documents(conn, documents_file):
+    print("Cargando documents...")
+    rows = []
+    with open(documents_file, encoding="utf-8") as f:
+        for line in f:
+            record = json.loads(line)
+            rows.append((record["document_id"], record["title"], record["artist"]))
+
+    with conn.cursor() as cur:
+        cur.execute("TRUNCATE documents CASCADE")
+        for batch in _batched(rows, BATCH_SIZE):
+            cur.executemany(
+                "INSERT INTO documents (document_id, title, artist) VALUES (%s, %s, %s)",
+                batch
+            )
+    conn.commit()
+    print(f"  {len(rows)} canciones cargadas.")
+
+
 def load_metadata(conn, metadata_file):
     print("Cargando metadata...")
     rows = []
@@ -64,18 +83,19 @@ def load_metadata(conn, metadata_file):
     print(f"  {len(rows)} chunks cargados.")
 
 
-def load_doc_norms(conn, doc_norms_file):
-    print("Cargando doc_norms...")
+def load_doc_norms(conn, table, id_column, doc_norms_file):
+    print(f"Cargando {table}...")
 
     with open(doc_norms_file, encoding="utf-8") as f:
         doc_norms = json.load(f)
 
-    rows = [(int(chunk_id), norm) for chunk_id, norm in doc_norms.items()]
+    rows = [(int(entity_id), norm) for entity_id, norm in doc_norms.items()]
 
     with conn.cursor() as cur:
+        cur.execute(f"TRUNCATE {table}")
         for batch in _batched(rows, BATCH_SIZE):
             cur.executemany(
-                "INSERT INTO doc_norms (chunk_id, norm_value) VALUES (%s, %s)",
+                f"INSERT INTO {table} ({id_column}, norm_value) VALUES (%s, %s)",
                 batch
             )
 
@@ -84,23 +104,22 @@ def load_doc_norms(conn, doc_norms_file):
     print(f"  {len(rows)} normas cargadas.")
 
 
-def load_term_index(conn, idf_file, index_file):
-    
+def load_term_index(conn, table, idf_file, index_file):
 
-    print("Cargando term_index (idf + postings combinados)...")
+    print(f"Cargando {table} (idf + postings combinados)...")
 
     with open(idf_file, encoding="utf-8") as f:
         idf = json.load(f)
 
     with conn.cursor() as cur:
-        cur.execute("TRUNCATE term_index")
+        cur.execute(f"TRUNCATE {table}")
 
     conn.commit()
     total = 0
 
     with conn.cursor() as cur:
         with open(index_file, encoding="utf-8") as f:
-            with cur.copy("COPY term_index (term, idf_value, postings) FROM STDIN") as copy:
+            with cur.copy(f"COPY {table} (term, idf_value, postings) FROM STDIN") as copy:
                 for line in f:
                     record = json.loads(line)
                     term = record["term"]
@@ -124,13 +143,24 @@ def main():
     try:
         load_schema(conn)
         # Orden importa por las foreign keys:
-        # codebook -> term_index
-        # metadata -> doc_norms
-        load_codebook(conn, os.path.join(DATA,"processed","codebook.json"))
-        load_metadata(conn, os.path.join(DATA,"processed","metadata.json"))
-        load_doc_norms(conn, os.path.join(DATA,"index","doc_norms.json"))
-        load_term_index(conn, os.path.join(DATA, "processed", "idf.json"),
-                              os.path.join(DATA, "index",     "final_index.idx"))
+        # codebook -> term_index_song / term_index_chunk
+        # documents -> metadata -> doc_norms_chunk
+        # documents -> doc_norms_song
+        load_codebook(conn, os.path.join(DATA, "processed", "codebook.json"))
+        load_documents(conn, os.path.join(DATA, "processed", "documents.json"))
+        load_metadata(conn, os.path.join(DATA, "processed", "metadata.json"))
+
+        load_term_index(conn, "term_index_song",
+                               os.path.join(DATA, "processed", "idf.json"),
+                               os.path.join(DATA, "index", "final_index.idx"))
+        load_term_index(conn, "term_index_chunk",
+                               os.path.join(DATA, "processed", "idf_chunks.json"),
+                               os.path.join(DATA, "index", "final_index_chunks.idx"))
+
+        load_doc_norms(conn, "doc_norms_song", "document_id",
+                              os.path.join(DATA, "index", "doc_norms.json"))
+        load_doc_norms(conn, "doc_norms_chunk", "chunk_id",
+                              os.path.join(DATA, "index", "doc_norms_chunks.json"))
         print("\nCarga completa.")
 
     finally:

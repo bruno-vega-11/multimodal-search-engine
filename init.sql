@@ -1,20 +1,24 @@
 
 -- TEXTO
+DROP TABLE IF EXISTS doc_norms CASCADE;
+DROP TABLE IF EXISTS term_index CASCADE;
+
 CREATE TABLE IF NOT EXISTS codebook (
     term        TEXT PRIMARY KEY,
     rank        INTEGER NOT NULL   -- posicion en el top-k (0 = mas frecuente)
 );
 
-CREATE TABLE IF NOT EXISTS term_index (
-    term        TEXT PRIMARY KEY REFERENCES codebook(term),
-    idf_value   DOUBLE PRECISION NOT NULL,
-    postings    JSONB NOT NULL
+-- documents: una fila por cancion completa
+CREATE TABLE IF NOT EXISTS documents (
+    document_id  INTEGER PRIMARY KEY,
+    title        TEXT NOT NULL,
+    artist       TEXT NOT NULL
 );
 
--- metadata: parrafo de cancion
+-- metadata: parrafo/chunk de cancion
 CREATE TABLE IF NOT EXISTS metadata (
     chunk_id     INTEGER PRIMARY KEY,
-    document_id  INTEGER NOT NULL,
+    document_id  INTEGER NOT NULL REFERENCES documents(document_id),
     title        TEXT NOT NULL,
     artist       TEXT NOT NULL,
     text         TEXT NOT NULL
@@ -23,8 +27,28 @@ CREATE TABLE IF NOT EXISTS metadata (
 CREATE INDEX IF NOT EXISTS idx_metadata_document_id
     ON metadata (document_id);
 
--- doc_norms: norma euclidiana del vector tf-idf de cada chunk
-CREATE TABLE IF NOT EXISTS doc_norms (
+-- term_index a nivel cancion: postings = [[document_id, tf], ...]
+CREATE TABLE IF NOT EXISTS term_index_song (
+    term        TEXT PRIMARY KEY REFERENCES codebook(term),
+    idf_value   DOUBLE PRECISION NOT NULL,
+    postings    JSONB NOT NULL
+);
+
+-- term_index a nivel chunk: postings = [[chunk_id, tf], ...]
+CREATE TABLE IF NOT EXISTS term_index_chunk (
+    term        TEXT PRIMARY KEY REFERENCES codebook(term),
+    idf_value   DOUBLE PRECISION NOT NULL,
+    postings    JSONB NOT NULL
+);
+
+-- doc_norms_song: norma euclidiana del vector tf-idf de cada cancion
+CREATE TABLE IF NOT EXISTS doc_norms_song (
+    document_id INTEGER PRIMARY KEY REFERENCES documents(document_id),
+    norm_value  DOUBLE PRECISION NOT NULL
+);
+
+-- doc_norms_chunk: norma euclidiana del vector tf-idf de cada chunk
+CREATE TABLE IF NOT EXISTS doc_norms_chunk (
     chunk_id    INTEGER PRIMARY KEY REFERENCES metadata(chunk_id),
     norm_value  DOUBLE PRECISION NOT NULL
 );
