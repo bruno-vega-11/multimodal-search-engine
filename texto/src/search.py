@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import json
@@ -9,19 +10,21 @@ from collections import Counter, defaultdict
 from preprocess import preprocess_text
 from metrics import MetricsTracker
 
+TEXTO_DIR = Path(__file__).resolve().parent.parent
+
 class SearchEngine:
     def __init__(
         self,
-        dictionary_file="data/index/dictionary.json",
-        index_file="data/index/final_index.idx",
-        idf_file="data/processed/idf.json",
-        doc_norms_file="data/index/doc_norms.json",
-        documents_file="data/processed/documents.json",
-        dictionary_chunks_file="data/index/dictionary_chunks.json",
-        index_chunks_file="data/index/final_index_chunks.idx",
-        idf_chunks_file="data/processed/idf_chunks.json",
-        doc_norms_chunks_file="data/index/doc_norms_chunks.json",
-        metadata_file="data/processed/metadata.json",
+        dictionary_file=str(TEXTO_DIR / "data/index/dictionary.json"),
+        index_file=str(TEXTO_DIR / "data/index/final_index.idx"),
+        idf_file=str(TEXTO_DIR / "data/processed/idf.json"),
+        doc_norms_file=str(TEXTO_DIR / "data/index/doc_norms.json"),
+        documents_file=str(TEXTO_DIR / "data/processed/documents.json"),
+        dictionary_chunks_file=str(TEXTO_DIR / "data/index/dictionary_chunks.json"),
+        index_chunks_file=str(TEXTO_DIR / "data/index/final_index_chunks.idx"),
+        idf_chunks_file=str(TEXTO_DIR / "data/processed/idf_chunks.json"),
+        doc_norms_chunks_file=str(TEXTO_DIR / "data/index/doc_norms_chunks.json"),
+        metadata_file=str(TEXTO_DIR / "data/processed/metadata.json"),
     ):
         with open(dictionary_file, "r", encoding="utf-8") as f:
             self.dictionary = json.load(f)
