@@ -1,20 +1,18 @@
 import os
 import glob
+import sys
 from dotenv import load_dotenv
 import psycopg2
 from mutagen.mp3 import MP3
 from mutagen.easyid3 import EasyID3
 
+SRC_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.dirname(os.path.dirname(SRC_DIR))
+sys.path.append(ROOT_DIR)
+import db
+
 load_dotenv()
 AUDIO_DIR = os.getenv("AUDIO_DIR", r"")
-def connect_db():
-    return psycopg2.connect(
-        dbname="sistema_multimodal",
-        user="postgres",
-        password="123456",
-        host="localhost",
-        port="5433"
-    )
 
 def obtener_metadata_audio(audio_path):
     filename = os.path.basename(audio_path)
@@ -74,7 +72,7 @@ def insertar_audio(cursor, data):
 def cargar_audios_a_postgres():
     audio_files = glob.glob(os.path.join(AUDIO_DIR, "**", "*.mp3"), recursive=True)
     print("Cantidad de audios encontrados:", len(audio_files))
-    conn = connect_db()
+    conn = db.get_connection()
     cursor = conn.cursor()
     insertados, ignorados, errores = 0, 0, 0
     
