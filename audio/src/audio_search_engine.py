@@ -60,9 +60,9 @@ class AudioSearchEngine:
         line_bytes = self.postings_file.readline()
         return json.loads(line_bytes.decode('utf-8'))
 
-    def search(self, query_filepath, top_k=5):
-        """Realiza la búsqueda recibiendo la ruta del archivo de consulta."""
-        mfcc_vectors = self.extractor.extract_from_path(query_filepath)
+    def search(self, query_bytes, top_k=5):
+        """Realiza la búsqueda recibiendo los bytes del audio de consulta."""
+        mfcc_vectors = self.extractor.extract_from_bytea(query_bytes)
         if mfcc_vectors is None:
             return []
             

@@ -11,12 +11,14 @@ from metrics import MetricsTracker
 from audio.src.audio_search_engine import AudioSearchEngine
 
 from imagen.src.VisualQuantizer import VisualQuantizer
+from imagen.src.image_local_search import ImageLocalSearch
 
 from db import get_connection
 
 MOTOR_TEXTO = None
 MOTOR_AUDIO = None
 MOTOR_IMAGEN = None
+INDICE_IMAGEN = None
 
 _SERVER_START = None
 _SEARCH_COUNTS = {"texto": 0, "audio": 0, "imagen": 0}
@@ -36,7 +38,7 @@ def _record_metrics(response: Response, modality: str, tracker_result: dict):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global MOTOR_TEXTO, MOTOR_AUDIO, MOTOR_IMAGEN, _SERVER_START
+    global MOTOR_TEXTO, MOTOR_AUDIO, MOTOR_IMAGEN, INDICE_IMAGEN, _SERVER_START
     print("[INFO] Iniciando Backend: Inicializando motores en memoria RAM...")
     _SERVER_START = time.perf_counter()
 
@@ -61,11 +63,20 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"[ERROR] No se pudo levantar el motor de imagen: {e}")
 
+    try:
+        INDICE_IMAGEN = ImageLocalSearch(base_dir=SCRIPT_DIR)
+        print(f"[OK] Índice invertido de imágenes listo ({len(INDICE_IMAGEN)} imágenes, postings en disco).")
+    except Exception as e:
+        print(f"[ERROR] No se pudo levantar el índice local de imágenes: {e}")
+
     yield  
     
     print("[INFO] Apagando Backend: Liberando recursos...")
     if MOTOR_TEXTO:
         try: MOTOR_TEXTO.close()
+        except: pass
+    if INDICE_IMAGEN:
+        try: INDICE_IMAGEN.close()
         except: pass
     print("[INFO] Servidor apagado limpiamente.")
 
@@ -191,6 +202,8 @@ async def stream_audio(audio_id: int):
 async def search_by_image(response: Response, query_image: UploadFile = File(...), top_k: int = 5):
     if not MOTOR_IMAGEN:
         raise HTTPException(status_code=503, detail="El motor de imagen no está listo.")
+    if not INDICE_IMAGEN:
+        raise HTTPException(status_code=503, detail="El índice local de imágenes no está listo.")
 
     if not query_image.filename.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')):
         raise HTTPException(status_code=400, detail="Formato de imagen no válido.")
@@ -207,29 +220,20 @@ async def search_by_image(response: Response, query_image: UploadFile = File(...
             finally:
                 if os.path.exists(nombre_temporal):
                     os.remove(nombre_temporal)
-            vector_str = str(histogram_vector)
-            sql_search = """
-                SELECT id, nombre_archivo, ruta_original, (histograma_visual <=> %s::vector) AS distancia
-                FROM fashion_images
-                ORDER BY histograma_visual <=> %s::vector ASC
-                LIMIT %s;
-            """
-            resultados = []
-            with get_connection() as conn:
-                with conn.cursor() as cursor:
-                    cursor.execute(sql_search, (vector_str, vector_str, top_k))
-                    rows = cursor.fetchall()
 
-                    for row in rows:
-                        id_img, nombre, ruta, distancia = row  # Ahora 'id_img' mapea correctamente el 'id'
-                        resultados.append(
-                            SearchResult(
-                                id=str(id_img),
-                                dataset_type="prenda",
-                                score=round(1.0 - float(distancia), 4),
-                                metadata={"nombre_archivo": nombre, "ruta_original": ruta}
-                            )
-                        )
+            # Búsqueda 100% local en RAM (sin base de datos): similitud coseno
+            # contra los histogramas precalculados del JSONL.
+            raw_image_results = INDICE_IMAGEN.search(histogram_vector, top_k=top_k)
+
+            resultados = [
+                SearchResult(
+                    id=str(r["id"]),
+                    dataset_type="prenda",
+                    score=r["score"],
+                    metadata={"nombre_archivo": r["nombre_archivo"], "ruta_original": r["ruta_original"]}
+                )
+                for r in raw_image_results
+            ]
 
         _record_metrics(response, "imagen", m.result)
 
@@ -243,29 +247,25 @@ async def search_by_image(response: Response, query_image: UploadFile = File(...
 @app.get("/imagen/render/{imagen_id}", tags=["Imagen"])
 async def render_image(imagen_id: int):
     """
-    Busca la ruta_original en la base de datos usando el imagen_id,
-    lee el archivo físico del disco duro y lo transmite al navegador.
+    Resuelve la ruta física de la imagen 100% en local (sin base de datos):
+    toma la ruta relativa del índice cargado en RAM (JSONL), la une con la ruta
+    base de la máquina, lee el archivo físico del disco y lo transmite al navegador.
     """
-    sql = "SELECT ruta_original FROM fashion_images WHERE id = %s;"
-    
+    if not INDICE_IMAGEN:
+        raise HTTPException(status_code=503, detail="El índice local de imágenes no está listo.")
+
     try:
-        with get_connection() as conn:
-            with conn.cursor() as cursor:
-                cursor.execute(sql, (imagen_id,))
-                row = cursor.fetchone()
-                if not row:
-                    raise HTTPException(status_code=404, detail="Registro de imagen no encontrado en la base de datos.")
-                ruta_original = row[0]
-                
-        ruta_limpia = os.path.normpath(ruta_original)
+        ruta_limpia = INDICE_IMAGEN.resolver_ruta(imagen_id)
+        if ruta_limpia is None:
+            raise HTTPException(status_code=404, detail="Registro de imagen no encontrado en el índice local.")
 
         if not os.path.exists(ruta_limpia):
-            print(f"[WARN IMAGEN] El registro existe en BD pero el archivo físico no está en: {ruta_limpia}")
+            print(f"[WARN IMAGEN] El registro existe en el índice pero el archivo físico no está en: {ruta_limpia}")
             raise HTTPException(status_code=404, detail="El archivo físico de la imagen no existe en el servidor.")
 
         with open(ruta_limpia, "rb") as f:
             contenido_imagen = f.read()
-            
+
         return Response(content=contenido_imagen, media_type="image/jpeg")
 
     except HTTPException:

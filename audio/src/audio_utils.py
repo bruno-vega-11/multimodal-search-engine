@@ -3,10 +3,8 @@ import io
 import sys
 import librosa
 import numpy as np
-import psycopg2
 import soundfile as sf
 from sklearn.cluster import MiniBatchKMeans
-from psycopg2 import sql
 from dotenv import load_dotenv
 import gc
 import db
@@ -21,8 +19,8 @@ PROJECT_ROOT = os.path.dirname(SRC_DIR)
 ROOT_DIR = os.path.dirname(PROJECT_ROOT)
 sys.path.append(ROOT_DIR)
 
-CODEBOOK_DIR = os.path.join(PROJECT_ROOT, "codebook")
-PROCESSED_DIR = os.path.join(PROJECT_ROOT, "processed")
+CODEBOOK_DIR = os.path.join(PROJECT_ROOT, "data", "codebook")
+PROCESSED_DIR = os.path.join(PROJECT_ROOT, "data", "processed")
 
 os.makedirs(CODEBOOK_DIR, exist_ok=True)
 os.makedirs(PROCESSED_DIR, exist_ok=True)
