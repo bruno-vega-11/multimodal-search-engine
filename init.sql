@@ -27,6 +27,14 @@ CREATE TABLE IF NOT EXISTS metadata (
 CREATE INDEX IF NOT EXISTS idx_metadata_document_id
     ON metadata (document_id);
 
+-- indices nativos de postgres sobre metadata.text, para comparar
+-- contra el indice invertido propio (term_index_song / term_index_chunk)
+CREATE INDEX IF NOT EXISTS idx_metadata_text_gin
+    ON metadata USING GIN (to_tsvector('spanish', text));
+
+CREATE INDEX IF NOT EXISTS idx_metadata_text_gist
+    ON metadata USING GIST (to_tsvector('spanish', text));
+
 -- term_index a nivel cancion: postings = [[document_id, tf], ...]
 CREATE TABLE IF NOT EXISTS term_index_song (
     term        TEXT PRIMARY KEY REFERENCES codebook(term),
