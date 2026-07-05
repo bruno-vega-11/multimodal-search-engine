@@ -1,9 +1,7 @@
 import os
 import librosa
 import numpy as np
-import psycopg2
 from sklearn.cluster import MiniBatchKMeans
-from psycopg2 import sql
 from dotenv import load_dotenv
 import sys
 load_dotenv()
@@ -26,6 +24,10 @@ os.makedirs(PROCESSED_DIR, exist_ok=True)
 CODEBOOK_FILE_PATH = os.path.join(CODEBOOK_DIR, "acoustic_codebook.npy")
 LEXICON_FILE_PATH = os.path.join(PROCESSED_DIR, "lexicon.json")
 INDEX_FILE_PATH = os.path.join(PROCESSED_DIR, "acoustic_inverted_index.jsonl")
+# Sidecar local audio_id -> {ruta, metadata}. Reemplaza la BD para audio.
+METADATA_FILE_PATH = os.path.join(PROCESSED_DIR, "audio_metadata.json")
+# Carpeta local con los MP3 (fuente de la búsqueda, sin BD)
+RAW_AUDIO_DIR = os.path.join(PROJECT_ROOT, "data", "raw", "fma_small")
 
 
 

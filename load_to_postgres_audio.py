@@ -1,7 +1,6 @@
 import os
 import glob
 from dotenv import load_dotenv
-import psycopg2
 from mutagen.mp3 import MP3
 from mutagen.easyid3 import EasyID3
 import db

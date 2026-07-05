@@ -101,23 +101,24 @@ class TextSearchResponse(pydantic.BaseModel):
 
 
 def obtener_metadata_cancion(audio_id: int) -> dict:
-    sql = "SELECT filename, title, collaborators, album, duration_seconds FROM audio_dataset WHERE audio_id = %s;"
-    try:
-        with get_connection() as conn:
-            with conn.cursor() as cursor:
-                cursor.execute(sql, (audio_id,))
-                row = cursor.fetchone()
-                if row:
-                    return {
-                        "filename": row[0],
-                        "title": row[1] if row[1] else "Desconocido",
-                        "artist": row[2] if row[2] else "Desconocido",
-                        "album": row[3] if row[3] else "Desconocido",
-                        "duration_seconds": float(row[4]) if row[4] else 0.0
-                    }
-    except Exception as e:
-        print(f"[ERROR BD] Metadata audio: {e}")
-    return
+    """Metadata 100% local: se lee del sidecar cargado en RAM por el motor
+    de audio (audio_metadata.json), sin tocar la base de datos."""
+    info = MOTOR_AUDIO.get_metadata(audio_id) if MOTOR_AUDIO else None
+    if not info:
+        return {
+            "filename": "Desconocido",
+            "title": "Desconocido",
+            "artist": "Desconocido",
+            "album": "Desconocido",
+            "duration_seconds": 0.0,
+        }
+    return {
+        "filename": info.get("filename", "Desconocido"),
+        "title": info.get("title", "Desconocido"),
+        "artist": info.get("artist", "Desconocido"),
+        "album": info.get("album", "Desconocido"),
+        "duration_seconds": float(info.get("duration_seconds") or 0.0),
+    }
 
 
 @app.post("/search/text", response_model=TextSearchResponse, tags=["Texto"])
@@ -161,17 +162,26 @@ async def search_by_audio(response: Response, query_audio: UploadFile = File(...
     resultados = []
     try:
         audio_bytes = await query_audio.read()
+        nombre_temporal = f"temp_{query_audio.filename}"
 
         with MetricsTracker() as m:
-            raw_audio_results = MOTOR_AUDIO.search(audio_bytes, top_k=top_k)
+            # El motor lee desde disco (librosa.load), así que persistimos
+            # los bytes subidos en un archivo temporal y pasamos su ruta.
+            with open(nombre_temporal, "wb") as f:
+                f.write(audio_bytes)
+            try:
+                raw_audio_results = MOTOR_AUDIO.search(nombre_temporal, top_k=top_k)
+            finally:
+                if os.path.exists(nombre_temporal):
+                    os.remove(nombre_temporal)
 
         for r in raw_audio_results:
             audio_id = r["audio_id"]
-            metadata_bd = obtener_metadata_cancion(audio_id)
+            metadata_local = obtener_metadata_cancion(audio_id)
             BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
-            metadata_bd["audio_url"] = f"{BASE_URL}/audio/stream/{audio_id}"
+            metadata_local["audio_url"] = f"{BASE_URL}/audio/stream/{audio_id}"
             resultados.append(SearchResult(
-                id=str(audio_id), dataset_type="cancion", score=float(r["similarity_score"]), metadata=metadata_bd
+                id=str(audio_id), dataset_type="cancion", score=float(r["similarity_score"]), metadata=metadata_local
             ))
         resultados.sort(key=lambda x: x.score, reverse=True)
 
@@ -185,14 +195,17 @@ async def search_by_audio(response: Response, query_audio: UploadFile = File(...
 
 @app.get("/audio/stream/{audio_id}", tags=["Audio"])
 async def stream_audio(audio_id: int):
-    sql = "SELECT audio_data, content_type FROM audio_dataset WHERE audio_id = %s;"
+    """Transmite el MP3 leyéndolo directamente del disco local (sin BD)."""
+    if not MOTOR_AUDIO:
+        raise HTTPException(status_code=503, detail="Motor de audio no disponible.")
+
+    ruta = MOTOR_AUDIO.get_audio_path(audio_id)
+    if not ruta or not os.path.exists(ruta):
+        raise HTTPException(status_code=404, detail="Audio no encontrado.")
+
     try:
-        with get_connection() as conn:
-            with conn.cursor() as cursor:
-                cursor.execute(sql, (audio_id,))
-                row = cursor.fetchone()
-                if not row: raise HTTPException(status_code=404, detail="Audio no encontrado.")
-                return Response(content=row[0], media_type=row[1] if row[1] else "audio/mpeg")
+        with open(ruta, "rb") as f:
+            return Response(content=f.read(), media_type="audio/mpeg")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

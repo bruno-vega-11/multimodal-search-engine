@@ -2,14 +2,13 @@ import json
 import math
 import os
 from collections import defaultdict
-from audio_utils import AcousticFeatureExtractor
-from audio_quantizer import AudioQuantizer
-from audio_utils import AcousticFeatureExtractor, CODEBOOK_FILE_PATH, LEXICON_FILE_PATH, INDEX_FILE_PATH
+from audio.src.audio_quantizer import AudioQuantizer
+from audio.src.audio_utils import AcousticFeatureExtractor, CODEBOOK_FILE_PATH, LEXICON_FILE_PATH, INDEX_FILE_PATH, METADATA_FILE_PATH
 
 class AudioSearchEngine:
-    def __init__(self, lexicon_path=LEXICON_FILE_PATH, postings_path=INDEX_FILE_PATH, codebook_path=CODEBOOK_FILE_PATH):
+    def __init__(self, lexicon_path=LEXICON_FILE_PATH, postings_path=INDEX_FILE_PATH, codebook_path=CODEBOOK_FILE_PATH, metadata_path=METADATA_FILE_PATH):
         print("Inicializando Motor de Búsqueda (Lexicon + Offset + TF-IDF)...")
-        
+
         # 1. Cargar solo el Lexicon (Punteros) en RAM
         try:
             with open(lexicon_path, 'r') as f:
@@ -22,24 +21,38 @@ class AudioSearchEngine:
         # 2. Mantener abierto el archivo de Postings (JSONL)
         self.postings_file = open(postings_path, 'rb')
 
-        # 3. Inicializar los módulos
+        # 3. Cargar metadata local (audio_id -> ruta + tags). Reemplaza la BD.
+        self.metadata = {}
+        try:
+            with open(metadata_path, 'r', encoding='utf-8') as f:
+                self.metadata = json.load(f)
+            print(f"Metadata local cargada en RAM: {len(self.metadata)} audios.")
+        except Exception as e:
+            print(f"[ADVERTENCIA] No se pudo cargar la metadata local ({metadata_path}): {e}")
+
+        # 4. Inicializar los módulos
         self.extractor = AcousticFeatureExtractor(window_ms=500)
         self.quantizer = AudioQuantizer(codebook_path=codebook_path)
 
-        # 4. Precomputar TF-IDF leyendo secuencialmente una vez
-        print("Precomputando magnitudes vectoriales TF-IDF de la base de datos...")
+        # 5. Precomputar TF-IDF leyendo secuencialmente una vez
+        print("Precomputando magnitudes vectoriales TF-IDF del índice local...")
         self.total_docs = set()
         self.doc_magnitudes = defaultdict(float)
         self.idf = {}
-        
-        # Recorremos el lexicon para construir el IDF inicial (En produccion masiva, esto también se guarda precalculado)
+
+        # Primer barrido: cachear postings y descubrir el total de documentos (N).
+        posting_cache = {}
         for word_id_str in self.lexicon.keys():
             posting_list = self._get_posting_list(word_id_str)
-            df = len(posting_list)
+            posting_cache[word_id_str] = posting_list
             for doc_id, _ in posting_list:
                 self.total_docs.add(doc_id)
-                
-            N = 8000 # Asumimos tamaño del dataset
+
+        # N real del índice (antes estaba hardcodeado en 8000).
+        N = len(self.metadata) if self.metadata else max(len(self.total_docs), 1)
+
+        for word_id_str, posting_list in posting_cache.items():
+            df = len(posting_list)
             self.idf[word_id_str] = math.log((N + 1) / (df + 1)) + 1.0
 
             idf_weight = self.idf[word_id_str]
@@ -51,6 +64,15 @@ class AudioSearchEngine:
             self.doc_magnitudes[doc_id] = math.sqrt(self.doc_magnitudes[doc_id])
 
         print("Motor de Búsqueda listo.")
+
+    def get_metadata(self, audio_id):
+        """Devuelve la metadata local de un audio_id (dict) o None si no existe."""
+        return self.metadata.get(str(audio_id))
+
+    def get_audio_path(self, audio_id):
+        """Devuelve la ruta local del MP3 para streaming, o None."""
+        info = self.metadata.get(str(audio_id))
+        return info.get("filepath") if info else None
 
     def _get_posting_list(self, word_id_str):
         """Salta al byte exacto en el disco duro y recupera la línea."""

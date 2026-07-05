@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.spatial.distance import cdist
 from collections import Counter
-from audio_utils import CODEBOOK_FILE_PATH
+from audio.src.audio_utils import CODEBOOK_FILE_PATH
 
 class AudioQuantizer:
     def __init__(self, codebook_path=CODEBOOK_FILE_PATH):
