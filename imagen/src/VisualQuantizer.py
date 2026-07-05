@@ -21,6 +21,9 @@ class VisualQuantizer:
             return np.zeros(self.k).tolist()
 
         keypoints, descriptors = self.sift.detectAndCompute(img, None)
+        
+        del img
+        
         if descriptors is None:
             return np.zeros(self.k).tolist()
 

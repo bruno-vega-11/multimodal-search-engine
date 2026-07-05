@@ -7,7 +7,7 @@ load_dotenv()
 
 
 def auditar_codebook_real(ruta_npy):
-    codebook = np.load(ruta_npy)
+    codebook = np.load(ruta_npy, mmap_mode='r')
     
     forma = codebook.shape
     print(f"Forma de la matriz: {forma}")
