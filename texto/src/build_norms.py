@@ -1,6 +1,12 @@
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
 import json
 import math
 from collections import defaultdict
+
+from metrics import MetricsTracker
 
 def build_doc_norms(index_file, idf_file, output_file):
 
@@ -51,5 +57,10 @@ def build_doc_norms(index_file, idf_file, output_file):
 
 
 if __name__ == "__main__":
-    build_doc_norms(index_file="data/index/final_index.idx", idf_file="data/processed/idf.json", output_file="data/index/doc_norms.json")
-    build_doc_norms(index_file="data/index/final_index_chunks.idx", idf_file="data/processed/idf_chunks.json", output_file="data/index/doc_norms_chunks.json")
+    with MetricsTracker() as m:
+        build_doc_norms(index_file="data/index/final_index.idx", idf_file="data/processed/idf.json", output_file="data/index/doc_norms.json")
+    print("\nMetricas build_doc_norms (songs):", m.result)
+
+    with MetricsTracker() as m:
+        build_doc_norms(index_file="data/index/final_index_chunks.idx", idf_file="data/processed/idf_chunks.json", output_file="data/index/doc_norms_chunks.json")
+    print("\nMetricas build_doc_norms (chunks):", m.result)
