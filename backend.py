@@ -1,13 +1,16 @@
 import os
+import time
+import json
 import pydantic
 from typing import List
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Response
 from contextlib import asynccontextmanager
 
-from texto.src.search import SearchEngine           
-from audio.src.audio_search_engine import AudioSearchEngine 
+from texto.src.search import SearchEngine
+from metrics import MetricsTracker
+from audio.src.audio_search_engine import AudioSearchEngine
 
-from imagen.src.VisualQuantizer import VisualQuantizer 
+from imagen.src.VisualQuantizer import VisualQuantizer
 
 from db import get_connection
 
@@ -15,11 +18,28 @@ MOTOR_TEXTO = None
 MOTOR_AUDIO = None
 MOTOR_IMAGEN = None
 
+_SERVER_START = None
+_SEARCH_COUNTS = {"texto": 0, "audio": 0, "imagen": 0}
+
+
+def _record_metrics(response: Response, modality: str, tracker_result: dict):
+    """Agrega latencia/memoria/disco de tracker_result + throughput acumulado
+    de esa modalidad al header X-Search-Metrics de la respuesta."""
+    _SEARCH_COUNTS[modality] += 1
+    elapsed = time.perf_counter() - _SERVER_START
+    throughput_qps = _SEARCH_COUNTS[modality] / elapsed if elapsed > 0 else 0.0
+
+    metrics = dict(tracker_result)
+    metrics["throughput_consultas_seg"] = round(throughput_qps, 3)
+    response.headers["X-Search-Metrics"] = json.dumps(metrics)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global MOTOR_TEXTO, MOTOR_AUDIO, MOTOR_IMAGEN
+    global MOTOR_TEXTO, MOTOR_AUDIO, MOTOR_IMAGEN, _SERVER_START
     print("[INFO] Iniciando Backend: Inicializando motores en memoria RAM...")
-    
+    _SERVER_START = time.perf_counter()
+
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
     try:
@@ -64,6 +84,11 @@ class SearchResult(pydantic.BaseModel):
     metadata: dict     # Campos para pintar en el Frontend
 
 
+class TextSearchResponse(pydantic.BaseModel):
+    by_song: List[SearchResult]   # ranking a nivel cancion completa
+    by_chunk: List[SearchResult]  # ranking a nivel fragmento/parrafo
+
+
 def obtener_metadata_cancion(audio_id: int) -> dict:
     sql = "SELECT filename, title, collaborators, album, duration_seconds FROM audio_dataset WHERE audio_id = %s;"
     try:
@@ -84,27 +109,40 @@ def obtener_metadata_cancion(audio_id: int) -> dict:
     return
 
 
-@app.post("/search/text", response_model=List[SearchResult], tags=["Texto"])
-async def search_by_text(query_text: str = Form(..., description="Fragmento a buscar"), top_k: int = 5):
+@app.post("/search/text", response_model=TextSearchResponse, tags=["Texto"])
+async def search_by_text(response: Response, query_text: str = Form(..., description="Fragmento a buscar"), top_k: int = 5):
     if not MOTOR_TEXTO:
         raise HTTPException(status_code=503, detail="Motor de texto no disponible.")
-    resultados = []
     try:
-        raw_results = MOTOR_TEXTO.search(query_text, top_k=top_k)
-        for r in raw_results:
-            resultados.append(SearchResult(
-                id=str(r["chunk_id"]), dataset_type="letra", score=float(r["rank_key"]),
+        with MetricsTracker() as m:
+            raw_results = MOTOR_TEXTO.search(query_text, top_k=top_k)
+
+        por_cancion = [
+            SearchResult(
+                id=str(r["document_id"]), dataset_type="cancion", score=float(r["score"]),
+                metadata={"title": r["title"], "artist": r["artist"]}
+            )
+            for r in raw_results["by_song"]
+        ]
+
+        por_chunk = [
+            SearchResult(
+                id=str(r["chunk_id"]), dataset_type="letra", score=float(r["score"]),
                 metadata={"title": r["title"], "artist": r["artist"], "text": r["text"]}
-            ))
-        resultados.sort(key=lambda x: x.score, reverse=True)
-        return resultados[:top_k]
+            )
+            for r in raw_results["by_chunk"]
+        ]
+
+        _record_metrics(response, "texto", m.result)
+
+        return TextSearchResponse(by_song=por_cancion, by_chunk=por_chunk)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 
 @app.post("/search/audio", response_model=List[SearchResult], tags=["Audio"])
-async def search_by_audio(query_audio: UploadFile = File(...), top_k: int = 5):
+async def search_by_audio(response: Response, query_audio: UploadFile = File(...), top_k: int = 5):
     if not MOTOR_AUDIO:
         raise HTTPException(status_code=503, detail="Motor de audio no disponible.")
     if not query_audio.filename.endswith(('.mp3', '.wav', '.ogg')):
@@ -112,7 +150,10 @@ async def search_by_audio(query_audio: UploadFile = File(...), top_k: int = 5):
     resultados = []
     try:
         audio_bytes = await query_audio.read()
-        raw_audio_results = MOTOR_AUDIO.search(audio_bytes, top_k=top_k)
+
+        with MetricsTracker() as m:
+            raw_audio_results = MOTOR_AUDIO.search(audio_bytes, top_k=top_k)
+
         for r in raw_audio_results:
             audio_id = r["audio_id"]
             metadata_bd = obtener_metadata_cancion(audio_id)
@@ -122,6 +163,9 @@ async def search_by_audio(query_audio: UploadFile = File(...), top_k: int = 5):
                 id=str(audio_id), dataset_type="cancion", score=float(r["similarity_score"]), metadata=metadata_bd
             ))
         resultados.sort(key=lambda x: x.score, reverse=True)
+
+        _record_metrics(response, "audio", m.result)
+
         return resultados[:top_k]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -144,7 +188,7 @@ async def stream_audio(audio_id: int):
 
 
 @app.post("/search/image", response_model=List[SearchResult], tags=["Imagen"])
-async def search_by_image(query_image: UploadFile = File(...), top_k: int = 5):
+async def search_by_image(response: Response, query_image: UploadFile = File(...), top_k: int = 5):
     if not MOTOR_IMAGEN:
         raise HTTPException(status_code=503, detail="El motor de imagen no está listo.")
 
@@ -152,37 +196,43 @@ async def search_by_image(query_image: UploadFile = File(...), top_k: int = 5):
         raise HTTPException(status_code=400, detail="Formato de imagen no válido.")
 
     try:
+        contenido_subida = await query_image.read()
         nombre_temporal = f"temp_{query_image.filename}"
-        with open(nombre_temporal, "wb") as f:
-            f.write(await query_image.read())
-        try:
-            histogram_vector = MOTOR_IMAGEN.image_to_histogram(nombre_temporal)
-        finally:
-            if os.path.exists(nombre_temporal):
-                os.remove(nombre_temporal)
-        vector_str = str(histogram_vector)
-        sql_search = """
-            SELECT id, nombre_archivo, ruta_original, (histograma_visual <=> %s::vector) AS distancia
-            FROM fashion_images
-            ORDER BY histograma_visual <=> %s::vector ASC
-            LIMIT %s;
-        """
-        resultados = []
-        with get_connection() as conn:
-            with conn.cursor() as cursor:
-                cursor.execute(sql_search, (vector_str, vector_str, top_k))
-                rows = cursor.fetchall()
-                
-                for row in rows:
-                    id_img, nombre, ruta, distancia = row  # Ahora 'id_img' mapea correctamente el 'id'
-                    resultados.append(
-                        SearchResult(
-                            id=str(id_img),
-                            dataset_type="prenda",
-                            score=round(1.0 - float(distancia), 4),
-                            metadata={"nombre_archivo": nombre, "ruta_original": ruta}
+
+        with MetricsTracker() as m:
+            with open(nombre_temporal, "wb") as f:
+                f.write(contenido_subida)
+            try:
+                histogram_vector = MOTOR_IMAGEN.image_to_histogram(nombre_temporal)
+            finally:
+                if os.path.exists(nombre_temporal):
+                    os.remove(nombre_temporal)
+            vector_str = str(histogram_vector)
+            sql_search = """
+                SELECT id, nombre_archivo, ruta_original, (histograma_visual <=> %s::vector) AS distancia
+                FROM fashion_images
+                ORDER BY histograma_visual <=> %s::vector ASC
+                LIMIT %s;
+            """
+            resultados = []
+            with get_connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(sql_search, (vector_str, vector_str, top_k))
+                    rows = cursor.fetchall()
+
+                    for row in rows:
+                        id_img, nombre, ruta, distancia = row  # Ahora 'id_img' mapea correctamente el 'id'
+                        resultados.append(
+                            SearchResult(
+                                id=str(id_img),
+                                dataset_type="prenda",
+                                score=round(1.0 - float(distancia), 4),
+                                metadata={"nombre_archivo": nombre, "ruta_original": ruta}
+                            )
                         )
-                    )
+
+        _record_metrics(response, "imagen", m.result)
+
         return resultados
 
     except Exception as e:

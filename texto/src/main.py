@@ -1,23 +1,31 @@
-import os
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
 import nltk
 
 from builder import (build_collection)
+from metrics import MetricsTracker
 
 nltk.download("stopwords")
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # texto/
+with MetricsTracker() as m:
+    build_collection(
+        csv_file="data/raw/spotify_millsongdata.csv",
 
-CSV_PATH = os.path.join(BASE_DIR, "data", "raw", "spotify_millsongdata.csv")
-PROCESSED_PATH = os.path.join(BASE_DIR, "data", "processed", "processed_chunks.jsonl")
-CODEBOOK_PATH = os.path.join(BASE_DIR, "data", "processed", "codebook.json")
-IDF_PATH = os.path.join(BASE_DIR, "data", "processed", "idf.json")
-METADATA_PATH = os.path.join(BASE_DIR, "data", "processed", "metadata.json")
+        processed_file="data/processed/processed_chunks.jsonl",
 
-build_collection(
-    csv_file=CSV_PATH,
-    processed_file=PROCESSED_PATH,
-    codebook_file=CODEBOOK_PATH,
-    idf_file=IDF_PATH,
-    metadata_file=METADATA_PATH,
-    top_k=5000
-)
+        codebook_file="data/processed/codebook.json",
+
+        idf_file="data/processed/idf.json",
+
+        idf_chunks_file="data/processed/idf_chunks.json",
+
+        metadata_file="data/processed/metadata.json",
+
+        documents_file="data/processed/documents.json",
+
+        top_k=10000
+    )
+
+print("\nMetricas build_collection:", m.result)
