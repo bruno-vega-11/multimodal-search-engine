@@ -6,3 +6,4 @@ pyvenv.cfg
 # --- BLOQUEO CRÍTICO DE DATOS PESADOS (20GB+) ---
 # Esto prohíbe CUALQUIER carpeta "raw" en cualquier parte del proyecto
 **/raw/**
+**/venv/**

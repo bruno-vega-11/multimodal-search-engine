@@ -111,9 +111,11 @@ class TextSearchResponse(pydantic.BaseModel):
 
 
 def obtener_metadata_cancion(audio_id: int) -> dict:
-    """Metadata 100% local: se lee del sidecar cargado en RAM por el motor
-    de audio (audio_metadata.json), sin tocar la base de datos."""
-    info = MOTOR_AUDIO.get_metadata(audio_id) if MOTOR_AUDIO else None
+    """Metadata 100% local: se lee del diccionario en RAM, sin tocar la base de datos."""
+    
+    # Buscamos usando el ID como texto en nuestro diccionario de RAM
+    info = MOTOR_AUDIO.metadata.get(str(audio_id)) if MOTOR_AUDIO else None
+    
     if not info:
         return {
             "filename": "Desconocido",
@@ -122,10 +124,12 @@ def obtener_metadata_cancion(audio_id: int) -> dict:
             "album": "Desconocido",
             "duration_seconds": 0.0,
         }
+        
     return {
         "filename": info.get("filename", "Desconocido"),
         "title": info.get("title", "Desconocido"),
-        "artist": info.get("artist", "Desconocido"),
+        # Ojo: en nuestro extractor lo llamamos 'collaborators', pero el frontend espera 'artist'
+        "artist": info.get("collaborators", "Desconocido"), 
         "album": info.get("album", "Desconocido"),
         "duration_seconds": float(info.get("duration_seconds") or 0.0),
     }
