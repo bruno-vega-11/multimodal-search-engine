@@ -4,6 +4,7 @@ import json
 import pydantic
 from typing import List
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Response
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from texto.src.search import SearchEngine
@@ -86,6 +87,15 @@ app = FastAPI(
     description="Backend unificado para consultas distribuidas de Texto, Audio e Imagen.",
     version="3.0.0",
     lifespan=lifespan
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["X-Search-Metrics"],
 )
 
 class SearchResult(pydantic.BaseModel):
