@@ -1,4 +1,3 @@
-
 import os
 import json
 from db import get_connection
@@ -8,13 +7,29 @@ BATCH_SIZE = 5000
 def load_schema(conn, schema_path=None):
     if schema_path is None:
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-        schema_path = os.path.join(BASE_DIR,"init.sql")
-
+        schema_path = os.path.join(BASE_DIR, "init.sql")
 
     with open(schema_path, encoding="utf-8") as f:
         schema_sql = f.read()
+        
     with conn.cursor() as cur:
+        # --- SOLUCIÓN DE PURGA ANTES DE LA CARGA ---
+        # Borra de manera segura las tablas previas para evitar el error DuplicateTable
+        print("Limpiando esquemas y tablas existentes...")
+        cur.execute("""
+            DROP TABLE IF EXISTS audio_dataset CASCADE;
+            DROP TABLE IF EXISTS term_index_song CASCADE;
+            DROP TABLE IF EXISTS term_index_chunk CASCADE;
+            DROP TABLE IF EXISTS doc_norms_song CASCADE;
+            DROP TABLE IF EXISTS doc_norms_chunk CASCADE;
+            DROP TABLE IF EXISTS metadata CASCADE;
+            DROP TABLE IF EXISTS documents CASCADE;
+            DROP TABLE IF EXISTS codebook CASCADE;
+        """)
+        
+        print("Ejecutando sentencias de inicialización (init.sql)...")
         cur.execute(schema_sql)
+        
     conn.commit()
 
 def _batched(rows, batch_size):
@@ -136,16 +151,13 @@ def load_term_index(conn, table, idf_file, index_file):
 
 
 def main():
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__)) # -> texto
-    DATA = os.path.join(BASE_DIR,"texto","data")
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__)) 
+    DATA = os.path.join(BASE_DIR, "texto", "data")
 
     conn = get_connection()
     try:
         load_schema(conn)
-        # Orden importa por las foreign keys:
-        # codebook -> term_index_song / term_index_chunk
-        # documents -> metadata -> doc_norms_chunk
-        # documents -> doc_norms_song
+
         load_codebook(conn, os.path.join(DATA, "processed", "codebook.json"))
         load_documents(conn, os.path.join(DATA, "processed", "documents.json"))
         load_metadata(conn, os.path.join(DATA, "processed", "metadata.json"))
