@@ -13,7 +13,7 @@ CODEBOOK_DIR = os.path.join(PROJECT_ROOT, "data", "codebook")
 PROCESSED_DIR = os.path.join(PROJECT_ROOT, "data", "processed")
 
 # ¡NUEVO! Ruta de la carpeta donde están tus MP3
-RAW_AUDIO_DIR = os.path.join(PROJECT_ROOT, "data", "raw", "fma_small_dataset", "fma_small")  # Ajusta según tu estructura de carpetas
+RAW_AUDIO_DIR = os.path.join(PROJECT_ROOT, "data", "raw", "fma_small")  # Ajusta según tu estructura de carpetas
 
 os.makedirs(CODEBOOK_DIR, exist_ok=True)
 os.makedirs(PROCESSED_DIR, exist_ok=True)

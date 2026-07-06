@@ -6,6 +6,7 @@ from typing import List
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+from fastapi.responses import FileResponse
 
 from texto.src.search import SearchEngine
 from metrics import MetricsTracker
@@ -213,15 +214,19 @@ async def stream_audio(audio_id: int):
     if not MOTOR_AUDIO:
         raise HTTPException(status_code=503, detail="Motor de audio no disponible.")
 
-    ruta = MOTOR_AUDIO.get_audio_path(audio_id)
-    if not ruta or not os.path.exists(ruta):
-        raise HTTPException(status_code=404, detail="Audio no encontrado.")
+    # Sacamos la ruta de nuestro diccionario en RAM
+    info = MOTOR_AUDIO.metadata.get(str(audio_id))
 
-    try:
-        with open(ruta, "rb") as f:
-            return Response(content=f.read(), media_type="audio/mpeg")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    if not info or not info.get("filepath"):
+        raise HTTPException(status_code=404, detail="Audio no encontrado en la metadata local.")
+
+    ruta = info["filepath"]
+
+    if not os.path.exists(ruta):
+        raise HTTPException(status_code=404, detail="El archivo físico de audio no existe en el disco.")
+
+    # FileResponse es la manera profesional de enviar archivos multimedia
+    return FileResponse(path=ruta, media_type="audio/mpeg")
 
 
 
