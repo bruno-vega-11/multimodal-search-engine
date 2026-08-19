@@ -3,7 +3,18 @@ pyvenv.cfg
 **/__pycache__/
 *.pyc
 
-# --- BLOQUEO CRÍTICO DE DATOS PESADOS (20GB+) ---
+# BLOQUEO CRÍTICO DE DATOS PESADOS (20GB+)
 # Esto prohíbe CUALQUIER carpeta "raw" en cualquier parte del proyecto
 **/raw/**
 **/venv/**
+
+# Variables de entorno locales (usar .env.example como plantilla)
+.env
+!.env.example
+
+# Frontend: dependencias y build, se regeneran con npm install / npm run build
+frontend/node_modules/
+frontend/dist/
+
+# Archivos temporales que el backend escribe al recibir una consulta
+temp_*

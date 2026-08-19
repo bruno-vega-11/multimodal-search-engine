@@ -15,24 +15,21 @@ opencv-python
 Pillow
 kornia
 
-# Audio y NLP
+# Audio
+librosa
+soundfile
 mutagen
+
+# NLP
 nltk
 
 # Machine Learning y Búsqueda
 torch
 faiss-cpu
+scikit-learn
+scipy
 kagglehub
 
 # Utilidades
 psutil
 tqdm
-numpy
-tqdm 
-torch
-kornia
-librosa
-soundfile
-numpy
-scipy
-scikit-learn

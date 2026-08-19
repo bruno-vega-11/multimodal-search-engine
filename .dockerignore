@@ -1,0 +1,23 @@
+# Entorno y cache de Python
+**/__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Git y docs (no hacen falta dentro de la imagen)
+.git
+.gitignore
+.gitattributes
+*.md
+
+# Secretos locales (las variables se inyectan via env_file en docker-compose)
+.env
+
+# Frontend tiene su propio build/Dockerfile, no debe entrar al contexto del backend
+frontend/
+
+# Datasets e indices: se montan como volumes en docker-compose, no se copian
+# a la imagen (evita imagenes de cientos de MB y permite regenerarlos sin rebuild)
+audio/data/
+imagen/data/
+texto/data/
