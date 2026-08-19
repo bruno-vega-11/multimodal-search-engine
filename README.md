@@ -1,8 +1,6 @@
 # Sistema Multimodal de Recuperación por Contenido
 
-Motor de búsqueda que recupera contenido por **texto, audio e imagen** comparando el contenido real (letras, huella acústica, huella visual), no solo metadatos. Cada modalidad implementa su propio pipeline de indexado desde cero — **SPIMI + merge externo** para texto, **codebooks de K-Means** para audio e imagen — diseñado para operar con un uso acotado de RAM: la construcción del índice vigila la memoria RSS real del proceso en vez de estimarla, y la búsqueda solo mantiene en memoria las estructuras livianas (léxico, normas, IDF), resolviendo las listas de postings bajo demanda desde disco. Ver [Diseño de índices y uso de RAM](#diseño-de-índices-y-uso-de-ram).
-
-Proyecto desarrollado para el curso de Base de Datos 2.
+Motor de búsqueda que recupera contenido por **texto, audio e imagen** comparando el contenido real (letras, huella acústica, huella visual), no solo metadatos. Cada modalidad implementa su propio pipeline de indexado desde cero **SPIMI + merge externo** para texto, **codebooks de K-Means** para audio e imagen diseñado para operar con un uso acotado de RAM: la construcción del índice vigila la memoria RSS real del proceso en vez de estimarla, y la búsqueda solo mantiene en memoria las estructuras livianas (léxico, normas, IDF), resolviendo las listas de postings bajo demanda desde disco. Ver [Diseño de índices y uso de RAM](#diseño-de-índices-y-uso-de-ram).
 
 ## Arquitectura
 
@@ -108,14 +106,14 @@ Un mismo principio se repite a propósito en las tres modalidades: nunca cargar 
 └── docker-compose.yml        # Orquesta postgres + backend + frontend
 ```
 
-## Puesta en marcha
+## Instalación y ejecución
 
 Los índices ya construidos (léxicos, postings, codebooks) están incluidos en el repositorio dentro de cada `*/data/processed` y `*/data/codebook`, así que **la búsqueda funciona apenas se levanta el proyecto**, sin necesidad de descargar los datasets crudos ni recorrer los pipelines de indexado.
 
 ### Requisitos previos
 
 - [Docker](https://docs.docker.com/get-docker/) + Docker Compose (opción recomendada), **o**
-- Python 3.11, Node.js 20+ y una instancia de PostgreSQL con la extensión `pgvector` (opción manual)
+- Python 3.11, Node.js 20+ y una instancia de PostgreSQL con la extensión `pgvector`
 - **No se necesita GPU** para correr el proyecto ni para buscar por texto, audio o imagen — todo el camino de búsqueda es CPU-only. La única excepción es reentrenar el codebook visual desde cero (`imagen/src/sift.py` + `kmeans.py`), un paso opcional que ya está resuelto en el repo (ver [Datasets y regeneración de índices](#datasets-y-regeneración-de-índices-opcional)).
 
 ### Opción A — Docker (recomendada)
@@ -194,6 +192,6 @@ Documentación interactiva (Swagger) disponible en `/docs` con el backend corrie
 
 Distribuido bajo licencia [MIT](LICENSE).
 
-## Autores
+---
 
-Proyecto grupal del curso de Base de Datos 2.
+Proyecto de Base de Datos 2.
