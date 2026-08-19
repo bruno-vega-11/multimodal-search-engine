@@ -1,5 +1,20 @@
 # Sistema Multimodal de Recuperación por Contenido
 
+<div align="center">
+
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white)
+![NumPy](https://img.shields.io/badge/NumPy-013243?style=for-the-badge&logo=numpy&logoColor=white)
+![scikit-learn](https://img.shields.io/badge/scikit--learn-F7931E?style=for-the-badge&logo=scikitlearn&logoColor=white)
+![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)
+
+</div>
+
 Motor de búsqueda que recupera contenido por **texto, audio e imagen** comparando el contenido real (letras, huella acústica, huella visual), no solo metadatos. Cada modalidad implementa su propio pipeline de indexado desde cero **SPIMI + merge externo** para texto, **codebooks de K-Means** para audio e imagen diseñado para operar con un uso acotado de RAM: la construcción del índice vigila la memoria RSS real del proceso en vez de estimarla, y la búsqueda solo mantiene en memoria las estructuras livianas (léxico, normas, IDF), resolviendo las listas de postings bajo demanda desde disco. Ver [Diseño de índices y uso de RAM](#diseño-de-índices-y-uso-de-ram).
 
 ## Arquitectura
