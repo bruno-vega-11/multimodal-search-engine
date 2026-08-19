@@ -1,1 +1,8 @@
 imagen/data/processed/vectores_fashion.jsonl filter=lfs diff=lfs merge=lfs -text
+
+# Indices con offsets de byte precalculados (seek()): git NUNCA debe tocar
+# sus saltos de linea (LF/CRLF), en ningun SO, o los offsets quedan invalidos.
+texto/data/index/final_index.idx -text
+texto/data/index/final_index_chunks.idx -text
+audio/data/processed/acoustic_inverted_index.jsonl -text
+imagen/data/processed/inverted_index.jsonl -text

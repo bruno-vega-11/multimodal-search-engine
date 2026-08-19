@@ -108,7 +108,7 @@ Un mismo principio se repite a propósito en las tres modalidades: nunca cargar 
 
 ## Instalación y ejecución
 
-Los índices ya construidos (léxicos, postings, codebooks) están incluidos en el repositorio dentro de cada `*/data/processed` y `*/data/codebook`, así que **la búsqueda funciona apenas se levanta el proyecto**, sin necesidad de descargar los datasets crudos ni recorrer los pipelines de indexado.
+Los índices ya construidos (léxicos, postings, codebooks) están incluidos en el repositorio dentro de cada `*/data/processed` y `*/data/codebook`. Para **probar el proyecto** solo hace falta levantar el backend y el frontend (Docker o manual, ver abajo) — las tres modalidades de búsqueda funcionan de inmediato contra esos índices ya construidos, sin descargar ningún dataset ni correr ningún pipeline. Recorrer los pipelines de indexado (sección [Datasets y regeneración de índices](#datasets-y-regeneración-de-índices-opcional)) solo es necesario si se quiere **regenerar los índices desde cero**, no para correr o probar la app.
 
 ### Requisitos previos
 
@@ -174,7 +174,7 @@ Las descargas desde Kaggle usan `kagglehub` y requieren credenciales de Kaggle c
 
 > **Nota sobre GPU:** dentro de `imagen/src/`, `sift.py` y `kmeans.py` son el único paso de todo el proyecto que requiere GPU — sirven para entrenar los 1000 centroides del codebook visual (`codebook_kmeans.npy`) desde cero. Ese archivo ya está generado y versionado en el repo, así que **correr la app, hacer búsquedas por imagen, o incluso reconstruir los histogramas de todo el dataset (`build_imagen_histograms.py`) no requiere GPU** — usan `VisualQuantizer` (`cv2.SIFT` + `faiss-cpu`), 100% CPU. La GPU solo hace falta si se quiere reentrenar el codebook desde otro dataset o con otro `k`.
 
-> El dataset de audio (FMA) no se re-descarga automáticamente: sin los MP3 originales en `audio/data/raw/`, la búsqueda por audio sigue funcionando contra el índice ya incluido, pero el endpoint de streaming (`/audio/stream/{id}`) no podrá reproducir el archivo físico.
+> **Reproducción/renderizado de audio e imagen:** sin los MP3 originales en `audio/data/raw/` o las fotos originales en `imagen/data/raw/`, la búsqueda sigue devolviendo resultados válidos contra los índices ya incluidos, pero `/audio/stream/{id}` y `/imagen/render/{id}` dan 404 porque no encuentran el archivo físico. Se soluciona descargando los datasets (`python download_images_dataset.py` para imagen, descarga manual de FMA para audio, ver tabla arriba) y ubicándolos en su carpeta `raw/` correspondiente.
 
 ## Endpoints principales
 
